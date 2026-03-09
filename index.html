@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Control de Stock de B-P Sanitarios</title>
+
+  <style>
+    *{
+      box-sizing:border-box;
+      font-family:Arial,sans-serif;
+    }
+
+    body{
+      margin:0;
+      background:#f3f3f3;
+      color:#ffffff;
+    }
+
+    .container{
+      max-width:1200px;
+      margin:30px auto;
+      padding:20px;
+    }
+
+    h1{
+      text-align:center;
+      color:black;
+      font-size:50px;
+      margin-bottom:10px;
+      font-weight:bold;
+      text-shadow:1px 1px 3px rgba(0,0,0,0.2);
+    }
+
+    .subtitulo{
+      text-align:center;
+      color:#555;
+      font-size:34px;
+      margin-bottom:25px;
+      font-weight:bold;
+      text-shadow:1px 1px 3px rgba(0,0,0,0.2);
+    }
+
+    .card{
+      background:#1b1b1b;
+      border-radius:12px;
+      padding:18px;
+      margin-bottom:20px;
+      border:1px solid #2b2b2b;
+    }
+
+    h2{
+      margin-top:0;
+      color:#ffffff;
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+      gap:12px;
+    }
+
+    input,select{
+      width:100%;
+      padding:10px;
+      border-radius:6px;
+      border:1px solid #333;
+      background:white;
+      color:black;
+    }
+
+    input:focus,select:focus{
+      border-color:#ff2b2b;
+      outline:none;
+    }
+
+    button{
+      border:none;
+      border-radius:6px;
+      padding:10px 14px;
+      cursor:pointer;
+      font-weight:bold;
+    }
+
+    .btn-primary{
+      background:#ff2b2b;
+      color:white;
+    }
+
+    .btn-success{
+      background:#28a745;
+      color:white;
+    }
+
+    .btn-danger{
+      background:#ff2b2b;
+      color:white;
+    }
+
+    .btn-secondary{
+      background:#444;
+      color:white;
+    }
+
+    .btn-logout{
+      background:#444;
+      color:#fff;
+    }
+
+    .top-actions{
+      display:flex;
+      justify-content:flex-end;
+      margin-bottom:15px;
+    }
+
+    .tabs{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      margin-bottom:15px;
+    }
+
+    .tab{
+      background:#2a2a2a;
+      color:#fff;
+    }
+
+    .tab.active{
+      background:#ff2b2b;
+      color:white;
+    }
+
+    .search-row{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+
+    table{
+      width:100%;
+      border-collapse:collapse;
+      margin-top:10px;
+      background:#fff;
+      color:#000;
+      border-radius:10px;
+      overflow:hidden;
+    }
+
+    th,td{
+      padding:12px;
+      border-bottom:1px solid #ddd;
+      text-align:left;
+    }
+
+    th{
+      background:#ff2b2b;
+      color:white;
+    }
+
+    tr:hover{
+      background:#f5f5f5;
+    }
+
+    .row-actions{
+      display:flex;
+      gap:6px;
+      align-items:center;
+      flex-wrap:wrap;
+    }
+
+    .small-input{
+      width:70px;
+      padding:8px;
+      background:#fff;
+      border:1px solid #333;
+      color:#000;
+    }
+
+    .stock-ok{
+      color:#008f4c;
+      font-weight:bold;
+    }
+
+    .stock-bajo{
+      color:#d60000;
+      font-weight:bold;
+    }
+
+    .mensaje{
+      margin-top:10px;
+      font-weight:bold;
+    }
+
+    .mensaje.ok{
+      color:#00ff88;
+    }
+
+    .mensaje.error{
+      color:#ff5555;
+    }
+
+    .empty{
+      text-align:center;
+      color:#666;
+      padding:20px 0;
+    }
+
+    .pdf-box{
+      text-align:center;
+    }
+
+    .pdf-box button{
+      min-width:220px;
+      font-size:16px;
+    }
+
+    .login-wrapper{
+      max-width:520px;
+      margin:60px auto;
+      padding:20px;
+    }
+
+    .login-card{
+      background:#1b1b1b;
+      border-radius:12px;
+      padding:25px;
+      border:1px solid #2b2b2b;
+      box-shadow:0 8px 20px rgba(0,0,0,0.15);
+    }
+
+    .login-title{
+      text-align:center;
+      color:black;
+      font-size:46px;
+      margin-bottom:8px;
+      font-weight:bold;
+      text-shadow:1px 1px 3px rgba(0,0,0,0.2);
+    }
+
+    .login-subtitle{
+      text-align:center;
+      color:#555;
+      font-size:26px;
+      margin-bottom:25px;
+      font-weight:bold;
+      text-shadow:1px 1px 3px rgba(0,0,0,0.2);
+    }
+
+    .login-card h2{
+      text-align:center;
+      margin-bottom:18px;
+    }
+
+    .login-card .grid{
+      grid-template-columns:1fr;
+    }
+
+    .login-error{
+      margin-top:12px;
+      text-align:center;
+      font-weight:bold;
+      color:#ff5555;
+      min-height:20px;
+    }
+
+    @media (max-width:768px){
+      h1{
+        font-size:36px;
+      }
+
+      .subtitulo{
+        font-size:24px;
+      }
+
+      .login-title{
+        font-size:34px;
+      }
+
+      .login-subtitle{
+        font-size:20px;
+      }
+
+      .top-actions{
+        justify-content:center;
+      }
+
+      table, thead, tbody, th, td, tr{
+        display:block;
+      }
+
+      thead{
+        display:none;
+      }
+
+      tr{
+        background:#fff;
+        border:1px solid #ddd;
+        border-radius:10px;
+        padding:10px;
+        margin-bottom:12px;
+      }
+
+      td{
+        border:none;
+        padding:8px 0;
+      }
+
+      td::before{
+        content:attr(data-label);
+        display:block;
+        font-weight:bold;
+        color:#111;
+        margin-bottom:4px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- LOGIN -->
+  <div id="loginBox" class="login-wrapper" style="display:none;">
+    <div class="login-title">B-P Sanitarios</div>
+    <div class="login-subtitle">Sistema de Control de Stock</div>
+
+    <div class="login-card">
+      <h2>Ingresar</h2>
+
+      <div class="grid">
+        <input type="email" id="email" placeholder="Mail" />
+        <input type="password" id="password" placeholder="Contraseña" />
+      </div>
+
+      <div style="margin-top:12px; text-align:center;">
+        <button class="btn-primary" onclick="login()">Ingresar</button>
+      </div>
+
+      <div id="loginError" class="login-error"></div>
+    </div>
+  </div>
+
+  <!-- APP -->
+  <div id="app" style="display:none;">
+    <div class="container">
+      <div class="top-actions">
+        <button class="btn-logout" onclick="cerrarSesion()">Cerrar sesión</button>
+      </div>
+
+      <h1>B-P Sanitarios</h1>
+      <div class="subtitulo">Sistema de Control de Stock</div>
+
+      <div class="card">
+        <h2>Agregar producto</h2>
+        <div class="grid">
+          <input type="text" id="codigo" placeholder="Código" />
+          <select id="marca">
+            <option value="">Seleccionar marca</option>
+            <option value="Duke">Duke</option>
+            <option value="TF3">TF3</option>
+            <option value="Bonomini">Bonomini</option>
+            <option value="Dealer">Dealer</option>
+            <option value="Otros">Otros</option>
+          </select>
+          <input type="text" id="nombre" placeholder="Nombre del producto" />
+          <input type="number" id="cantidad" placeholder="Cantidad" min="0" />
+        </div>
+
+        <div style="margin-top:12px;">
+          <button class="btn-primary" onclick="agregarProducto()">Agregar producto</button>
+        </div>
+
+        <div id="mensaje" class="mensaje"></div>
+      </div>
+
+      <div class="card">
+        <h2>Buscar</h2>
+        <div class="search-row">
+          <input
+            type="text"
+            id="busqueda"
+            placeholder="Buscar por código o nombre"
+            oninput="renderTabla()"
+          />
+          <button class="btn-secondary" onclick="limpiarBusqueda()">Limpiar</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Productos</h2>
+
+        <div class="tabs">
+          <button class="tab active" onclick="cambiarMarcaVista('Todas', this)">Todas</button>
+          <button class="tab" onclick="cambiarMarcaVista('Duke', this)">Duke</button>
+          <button class="tab" onclick="cambiarMarcaVista('TF3', this)">TF3</button>
+          <button class="tab" onclick="cambiarMarcaVista('Bonomini', this)">Bonomini</button>
+          <button class="tab" onclick="cambiarMarcaVista('Dealer', this)">Dealer</button>
+          <button class="tab" onclick="cambiarMarcaVista('Otros', this)">Otros</button>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Código</th>
+              <th>Marca</th>
+              <th>Nombre</th>
+              <th>Cantidad</th>
+              <th>Movimiento</th>
+              <th>Eliminar</th>
+            </tr>
+          </thead>
+          <tbody id="tablaStock"></tbody>
+        </table>
+      </div>
+
+      <div class="card pdf-box">
+        <h2>Exportar stock</h2>
+        <button class="btn-primary" onclick="exportarPDF()">Descargar PDF</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
+    import {
+      getDatabase,
+      ref,
+      push,
+      onValue,
+      update,
+      remove,
+      off
+    } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-database.js";
+    import {
+      getAuth,
+      signInWithEmailAndPassword,
+      onAuthStateChanged,
+      signOut
+    } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCtn8b4kpU616tgH56Gw-NDH0o5zLDn48Q",
+      authDomain: "bpsanitariossrl.firebaseapp.com",
+      databaseURL: "https://bpsanitariossrl-default-rtdb.firebaseio.com",
+      projectId: "bpsanitariossrl",
+      storageBucket: "bpsanitariossrl.firebasestorage.app",
+      messagingSenderId: "761286267293",
+      appId: "1:761286267293:web:bfe8bf3e25a9fe22621f74",
+      measurementId: "G-BMJXXK58E2"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const auth = getAuth(app);
+    const productosRef = ref(db, "stockPorMarca");
+
+    let productos = [];
+    let marcaActual = "Todas";
+    let listenerActivo = false;
+
+    function mostrarMensaje(texto, tipo) {
+      const mensaje = document.getElementById("mensaje");
+      if (!mensaje) return;
+
+      mensaje.textContent = texto;
+      mensaje.className = "mensaje " + tipo;
+
+      setTimeout(() => {
+        mensaje.textContent = "";
+        mensaje.className = "mensaje";
+      }, 2500);
+    }
+
+    function mostrarErrorLogin(texto) {
+      const loginError = document.getElementById("loginError");
+      if (loginError) {
+        loginError.textContent = texto;
+      }
+    }
+
+    function limpiarFormulario() {
+      document.getElementById("codigo").value = "";
+      document.getElementById("marca").value = "";
+      document.getElementById("nombre").value = "";
+      document.getElementById("cantidad").value = "";
+    }
+
+    function activarLecturaStock() {
+      if (listenerActivo) return;
+      listenerActivo = true;
+
+      onValue(
+        productosRef,
+        (snapshot) => {
+          const data = snapshot.val() || {};
+          productos = Object.entries(data).map(([id, item]) => ({
+            id,
+            ...item
+          }));
+          renderTabla();
+        },
+        (error) => {
+          console.error("Error al leer la base de datos:", error);
+          alert("No se pudo leer la base de datos. Revisá las reglas de Firebase.");
+        }
+      );
+    }
+
+    function desactivarLecturaStock() {
+      off(productosRef);
+      listenerActivo = false;
+      productos = [];
+      renderTabla();
+    }
+
+    window.login = async function () {
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value;
+
+      mostrarErrorLogin("");
+
+      if (!email || !password) {
+        mostrarErrorLogin("Ingresá el mail y la contraseña.");
+        return;
+      }
+
+      try {
+        await signInWithEmailAndPassword(auth, email, password);
+      } catch (error) {
+        console.error(error);
+        mostrarErrorLogin("Usuario o contraseña incorrectos.");
+      }
+    };
+
+    window.cerrarSesion = async function () {
+      try {
+        await signOut(auth);
+      } catch (error) {
+        console.error(error);
+        alert("No se pudo cerrar la sesión.");
+      }
+    };
+
+    onAuthStateChanged(auth, (user) => {
+      const loginBox = document.getElementById("loginBox");
+      const appBox = document.getElementById("app");
+
+      if (user) {
+        loginBox.style.display = "none";
+        appBox.style.display = "block";
+        activarLecturaStock();
+      } else {
+        loginBox.style.display = "block";
+        appBox.style.display = "none";
+        desactivarLecturaStock();
+      }
+    });
+
+    window.limpiarBusqueda = function () {
+      document.getElementById("busqueda").value = "";
+      renderTabla();
+    };
+
+    window.cambiarMarcaVista = function (marca, boton) {
+      marcaActual = marca;
+
+      const tabs = document.querySelectorAll(".tab");
+      tabs.forEach(tab => tab.classList.remove("active"));
+      boton.classList.add("active");
+
+      renderTabla();
+    };
+
+    window.agregarProducto = async function () {
+      const codigo = document.getElementById("codigo").value.trim();
+      const marca = document.getElementById("marca").value;
+      const nombre = document.getElementById("nombre").value.trim();
+      const cantidad = parseInt(document.getElementById("cantidad").value, 10);
+
+      if (!codigo || !marca || !nombre || isNaN(cantidad) || cantidad < 0) {
+        mostrarMensaje("Completá todos los campos correctamente.", "error");
+        return;
+      }
+
+      const productoExistente = productos.find(
+        p => p.codigo.toLowerCase() === codigo.toLowerCase()
+      );
+
+      if (productoExistente) {
+        mostrarMensaje("Ya existe un producto con ese código.", "error");
+        return;
+      }
+
+      try {
+        await push(productosRef, {
+          codigo,
+          marca,
+          nombre,
+          cantidad
+        });
+
+        limpiarFormulario();
+        mostrarMensaje("Producto agregado correctamente.", "ok");
+      } catch (error) {
+        console.error(error);
+        mostrarMensaje("No se pudo guardar en la base de datos.", "error");
+      }
+    };
+
+    window.cambiarCantidad = async function (id, tipo) {
+      const input = document.getElementById("mov-" + id);
+      const valor = parseInt(input.value, 10);
+
+      if (isNaN(valor) || valor <= 0) {
+        alert("Ingresá una cantidad válida.");
+        return;
+      }
+
+      const producto = productos.find(p => p.id === id);
+      if (!producto) return;
+
+      let nuevaCantidad = producto.cantidad;
+
+      if (tipo === "sumar") {
+        nuevaCantidad += valor;
+      } else {
+        if (producto.cantidad - valor < 0) {
+          alert("No podés dejar el stock en negativo.");
+          return;
+        }
+        nuevaCantidad -= valor;
+      }
+
+      try {
+        await update(ref(db, "stockPorMarca/" + id), {
+          cantidad: nuevaCantidad
+        });
+      } catch (error) {
+        console.error(error);
+        alert("No se pudo actualizar el stock.");
+      }
+    };
+
+    window.eliminarProducto = async function (id) {
+      const confirmar = confirm("¿Querés eliminar este producto?");
+      if (!confirmar) return;
+
+      try {
+        await remove(ref(db, "stockPorMarca/" + id));
+      } catch (error) {
+        console.error(error);
+        alert("No se pudo eliminar el producto.");
+      }
+    };
+
+    function obtenerProductosFiltrados() {
+      const busqueda = document.getElementById("busqueda").value.toLowerCase().trim();
+
+      let productosFiltrados = productos.filter(p =>
+        p.nombre.toLowerCase().includes(busqueda) ||
+        p.codigo.toLowerCase().includes(busqueda)
+      );
+
+      if (marcaActual !== "Todas") {
+        productosFiltrados = productosFiltrados.filter(p => p.marca === marcaActual);
+      }
+
+      return productosFiltrados;
+    }
+
+    window.renderTabla = function () {
+      const tabla = document.getElementById("tablaStock");
+      const productosFiltrados = obtenerProductosFiltrados();
+
+      tabla.innerHTML = "";
+
+      if (productosFiltrados.length === 0) {
+        tabla.innerHTML = `
+          <tr>
+            <td colspan="6" class="empty">No hay productos para mostrar.</td>
+          </tr>
+        `;
+        return;
+      }
+
+      productosFiltrados.forEach(producto => {
+        const bajoStock = producto.cantidad < 10;
+        const claseStock = bajoStock ? "stock-bajo" : "stock-ok";
+        const textoAlerta = bajoStock ? " ⚠ Bajo stock" : "";
+
+        const fila = document.createElement("tr");
+        fila.innerHTML = `
+          <td data-label="Código">${producto.codigo}</td>
+          <td data-label="Marca">${producto.marca}</td>
+          <td data-label="Nombre">${producto.nombre}</td>
+          <td data-label="Cantidad" class="${claseStock}">
+            ${producto.cantidad}${textoAlerta}
+          </td>
+          <td data-label="Movimiento">
+            <div class="row-actions">
+              <input
+                type="number"
+                id="mov-${producto.id}"
+                class="small-input"
+                min="1"
+                placeholder="Cant."
+              />
+              <button class="btn-success" onclick="cambiarCantidad('${producto.id}', 'sumar')">+</button>
+              <button class="btn-danger" onclick="cambiarCantidad('${producto.id}', 'restar')">-</button>
+            </div>
+          </td>
+          <td data-label="Eliminar">
+            <button class="btn-danger" onclick="eliminarProducto('${producto.id}')">Eliminar</button>
+          </td>
+        `;
+
+        tabla.appendChild(fila);
+      });
+    };
+
+    window.exportarPDF = function () {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+
+      const hoy = new Date();
+      const fecha =
+        String(hoy.getDate()).padStart(2, "0") + "/" +
+        String(hoy.getMonth() + 1).padStart(2, "0") + "/" +
+        hoy.getFullYear();
+
+      let y = 15;
+
+      doc.setFontSize(18);
+      doc.text("Stock B-P Sanitarios", 14, y);
+      y += 8;
+
+      doc.setFontSize(11);
+      doc.text("Fecha: " + fecha, 14, y);
+      y += 10;
+
+      const marcasOrden = ["Duke", "TF3", "Bonomini", "Dealer", "Otros"];
+      const productosOrdenados = [...productos].sort((a, b) => {
+        const marcaA = marcasOrden.indexOf(a.marca);
+        const marcaB = marcasOrden.indexOf(b.marca);
+
+        if (marcaA !== marcaB) return marcaA - marcaB;
+        return a.nombre.localeCompare(b.nombre);
+      });
+
+      marcasOrden.forEach((marca) => {
+        const listaMarca = productosOrdenados.filter(p => p.marca === marca);
+
+        if (listaMarca.length === 0) return;
+
+        if (y > 250) {
+          doc.addPage();
+          y = 15;
+        }
+
+        doc.setFontSize(13);
+        doc.text("Marca: " + marca, 14, y);
+        y += 8;
+
+        doc.setFontSize(10);
+        doc.setFillColor(230, 230, 230);
+        doc.rect(14, y - 5, 182, 8, "F");
+
+        doc.text("Código", 16, y);
+        doc.text("Marca", 55, y);
+        doc.text("Nombre", 95, y);
+        doc.text("Stock", 175, y);
+
+        y += 8;
+
+        listaMarca.forEach((p) => {
+          if (y > 280) {
+            doc.addPage();
+            y = 15;
+
+            doc.setFontSize(13);
+            doc.text("Marca: " + marca + " (continuación)", 14, y);
+            y += 8;
+
+            doc.setFontSize(10);
+            doc.setFillColor(230, 230, 230);
+            doc.rect(14, y - 5, 182, 8, "F");
+
+            doc.text("Código", 16, y);
+            doc.text("Marca", 55, y);
+            doc.text("Nombre", 95, y);
+            doc.text("Stock", 175, y);
+
+            y += 8;
+          }
+
+          const nombreCorto =
+            p.nombre.length > 35 ? p.nombre.substring(0, 35) + "..." : p.nombre;
+
+          doc.text(String(p.codigo), 16, y);
+          doc.text(String(p.marca), 55, y);
+          doc.text(String(nombreCorto), 95, y);
+          doc.text(String(p.cantidad), 175, y);
+
+          y += 7;
+        });
+
+        y += 6;
+      });
+
+      doc.save("stock-bp-sanitarios.pdf");
+    };
+  </script>
+</body>
+</html>
