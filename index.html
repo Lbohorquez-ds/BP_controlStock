@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
@@ -263,6 +263,82 @@
       min-height:20px;
     }
 
+    .remito-actions{
+      margin-top:12px;
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+
+    .remito-tools{
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+      gap:12px;
+      align-items:end;
+    }
+
+    .remito-preview{
+      margin-top:14px;
+      padding:14px;
+      border-radius:10px;
+      background:#fff;
+      color:#000;
+      border:1px solid #ddd;
+    }
+
+    .remito-preview h3{
+      margin:0 0 10px 0;
+      color:#111;
+    }
+
+    .remito-meta{
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+      gap:8px 14px;
+      margin-bottom:12px;
+    }
+
+    .remito-preview table{
+      margin-top:8px;
+    }
+
+    .estado-activo{
+      color:#008f4c;
+      font-weight:bold;
+    }
+
+    .estado-anulado{
+      color:#d60000;
+      font-weight:bold;
+    }
+
+    .recent-remitos{
+      margin-top:14px;
+      display:grid;
+      gap:10px;
+    }
+
+    .recent-item{
+      background:#fff;
+      border:1px solid #ddd;
+      border-radius:10px;
+      padding:12px;
+      color:#000;
+      display:flex;
+      justify-content:space-between;
+      gap:12px;
+      flex-wrap:wrap;
+      align-items:center;
+    }
+
+    .recent-item strong{
+      color:#111;
+    }
+
+    .muted{
+      color:#666;
+    }
+
     @media (max-width:768px){
       h1{
         font-size:36px;
@@ -345,6 +421,7 @@
         <button class="btn-logout" onclick="cerrarSesion()">Cerrar sesión</button>
       </div>
 
+
       <h1>B-P Sanitarios</h1>
       <div class="subtitulo">Sistema de Control de Stock</div>
 
@@ -362,6 +439,7 @@
           </select>
           <input type="text" id="nombre" placeholder="Nombre del producto" />
           <input type="number" id="cantidad" placeholder="Cantidad" min="0" />
+          <input type="number" id="precio" placeholder="Precio unitario" min="0" step="0.01" />
         </div>
 
         <div style="margin-top:12px;">
@@ -403,13 +481,75 @@
               <th>Marca</th>
               <th>Nombre</th>
               <th>Cantidad</th>
+              <th>Precio</th>
               <th>Movimiento</th>
+              <th>Carrito</th>
               <th>Eliminar</th>
             </tr>
           </thead>
           <tbody id="tablaStock"></tbody>
         </table>
       </div>
+
+      <div class="card">
+        <h2>Remito</h2>
+        <div class="grid">
+          <input type="text" id="clienteNombre" placeholder="Nombre o razón social" />
+          <input type="text" id="clienteDireccion" placeholder="Dirección" />
+          <input type="text" id="clienteCuit" placeholder="CUIT" />
+        </div>
+
+        <div class="remito-actions">
+          <button class="btn-success" onclick="generarRemito()">Generar remito</button>
+        </div>
+      </div>
+
+     
+
+      <div class="card">
+        <h2>Carrito / Remito</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Cantidad</th>
+              <th>Descripción</th>
+              <th>Unitario</th>
+              <th>Total</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="tablaCarrito"></tbody>
+        </table>
+
+        <div id="carritoVacio" class="empty">No hay productos agregados al remito.</div>
+
+        <div style="margin-top:12px; font-weight:bold; color:white; text-align:right;">
+          Total general: <span id="totalGeneralRemito">$0,00</span>
+        </div>
+      </div>
+        
+     <div class="card">
+        <h2>Consultar / anular remito</h2>
+
+        <div class="remito-tools">
+          <input
+            type="number"
+            id="remitoNumeroBuscar"
+            placeholder="Número de remito"
+            min="1"
+          />
+          <button class="btn-secondary" onclick="verRemito()">Ver remito</button>
+          <button class="btn-danger" onclick="anularRemitoSeleccionado()">Anular remito</button>
+        </div>
+
+        <div id="remitoPreview" class="remito-preview" style="display:none;"></div>
+
+        <div class="recent-remitos">
+          <h3 style="margin:0; color:#fff;">Últimos remitos</h3>
+          <div id="listaUltimosRemitos" class="muted">Todavía no hay remitos guardados.</div>
+        </div>
+      </div>
+
 
       <div class="card pdf-box">
         <h2>Exportar stock</h2>
@@ -429,7 +569,9 @@
       onValue,
       update,
       remove,
-      off
+      off,
+      get,
+      runTransaction
     } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-database.js";
     import {
       getAuth,
@@ -453,10 +595,15 @@
     const db = getDatabase(app);
     const auth = getAuth(app);
     const productosRef = ref(db, "stockPorMarca");
+    const remitosRef = ref(db, "remitos");
+    const contadorRemitosRef = ref(db, "configuracion/ultimoNumeroRemito");
 
     let productos = [];
     let marcaActual = "Todas";
     let listenerActivo = false;
+    let carrito = [];
+    let listenerRemitosActivo = false;
+    let remitoSeleccionado = null;
 
     function mostrarMensaje(texto, tipo) {
       const mensaje = document.getElementById("mensaje");
@@ -483,6 +630,134 @@
       document.getElementById("marca").value = "";
       document.getElementById("nombre").value = "";
       document.getElementById("cantidad").value = "";
+      document.getElementById("precio").value = "";
+    }
+
+    function formatearNumeroRemito(numero) {
+      return String(Number(numero) || 0).padStart(8, "0");
+    }
+
+    function formatearFecha(fechaIso) {
+      if (!fechaIso) return "-";
+      const fecha = new Date(fechaIso);
+      if (Number.isNaN(fecha.getTime())) return fechaIso;
+      return fecha.toLocaleString("es-AR");
+    }
+
+    function formatearMoneda(valor) {
+      return "$" + Number(valor || 0).toLocaleString("es-AR", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      });
+    }
+
+    function limpiarVistaRemito() {
+      remitoSeleccionado = null;
+      const preview = document.getElementById("remitoPreview");
+      if (!preview) return;
+      preview.style.display = "none";
+      preview.innerHTML = "";
+    }
+
+    function renderVistaRemito(remito) {
+      const preview = document.getElementById("remitoPreview");
+      if (!preview) return;
+
+      const itemsHtml = (remito.items || []).map(item => {
+        const total = (Number(item.precio) || 0) * (Number(item.cantidad) || 0);
+        return `
+          <tr>
+            <td data-label="Cantidad">${item.cantidad}</td>
+            <td data-label="Código">${item.codigo || "-"}</td>
+            <td data-label="Descripción">${item.nombre || "-"}</td>
+            <td data-label="Unitario">${formatearMoneda(item.precio)}</td>
+            <td data-label="Total">${formatearMoneda(total)}</td>
+          </tr>
+        `;
+      }).join("");
+
+      const estadoClase = remito.estado === "anulado" ? "estado-anulado" : "estado-activo";
+
+      preview.innerHTML = `
+        <h3>Remito N° ${formatearNumeroRemito(remito.numero)}</h3>
+
+        <div class="remito-meta">
+          <div><strong>Estado:</strong> <span class="${estadoClase}">${remito.estado || "activo"}</span></div>
+          <div><strong>Fecha:</strong> ${formatearFecha(remito.fechaIso || remito.fecha)}</div>
+          <div><strong>Cliente:</strong> ${remito.clienteNombre || "-"}</div>
+          <div><strong>Dirección:</strong> ${remito.clienteDireccion || "-"}</div>
+          <div><strong>CUIT:</strong> ${remito.clienteCuit || "-"}</div>
+          <div><strong>Total:</strong> ${formatearMoneda(remito.totalGeneral)}</div>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Cantidad</th>
+              <th>Código</th>
+              <th>Descripción</th>
+              <th>Unitario</th>
+              <th>Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${itemsHtml || '<tr><td colspan="5" class="empty">Este remito no tiene productos.</td></tr>'}
+          </tbody>
+        </table>
+      `;
+
+      preview.style.display = "block";
+    }
+
+    function activarLecturaRemitos() {
+      if (listenerRemitosActivo) return;
+      listenerRemitosActivo = true;
+
+      onValue(
+        remitosRef,
+        (snapshot) => {
+          const data = snapshot.val() || {};
+          const lista = Object.values(data)
+            .sort((a, b) => Number(b.numero || 0) - Number(a.numero || 0))
+            .slice(0, 10);
+
+          const contenedor = document.getElementById("listaUltimosRemitos");
+          if (!contenedor) return;
+
+          if (lista.length === 0) {
+            contenedor.innerHTML = '<div class="muted">Todavía no hay remitos guardados.</div>';
+            return;
+          }
+
+          contenedor.innerHTML = lista.map(remito => `
+            <div class="recent-item">
+              <div>
+                <strong>Remito N° ${formatearNumeroRemito(remito.numero)}</strong><br>
+                <span class="muted">${remito.clienteNombre || "Sin cliente"} · ${formatearFecha(remito.fechaIso || remito.fecha)}</span><br>
+                <span class="${remito.estado === "anulado" ? "estado-anulado" : "estado-activo"}">${remito.estado || "activo"}</span>
+              </div>
+              <div>
+                <button class="btn-secondary" onclick="cargarRemitoDesdeLista(${Number(remito.numero || 0)})">Ver</button>
+              </div>
+            </div>
+          `).join("");
+        },
+        (error) => {
+          console.error("Error al leer remitos:", error);
+        }
+      );
+    }
+
+    function desactivarLecturaRemitos() {
+      off(remitosRef);
+      listenerRemitosActivo = false;
+      limpiarVistaRemito();
+      const inputNumero = document.getElementById("remitoNumeroBuscar");
+      if (inputNumero) inputNumero.value = "";
+      const contenedor = document.getElementById("listaUltimosRemitos");
+      if (contenedor) {
+        contenedor.innerHTML = '<div class="muted">Todavía no hay remitos guardados.</div>';
+      }
     }
 
     function activarLecturaStock() {
@@ -497,7 +772,7 @@
             id,
             ...item
           }));
-          renderTabla();
+          window.renderTabla();
         },
         (error) => {
           console.error("Error al leer la base de datos:", error);
@@ -510,7 +785,10 @@
       off(productosRef);
       listenerActivo = false;
       productos = [];
-      renderTabla();
+      carrito = [];
+      limpiarVistaRemito();
+      window.renderTabla();
+      window.renderCarrito();
     }
 
     window.login = async function () {
@@ -549,16 +827,18 @@
         loginBox.style.display = "none";
         appBox.style.display = "block";
         activarLecturaStock();
+        activarLecturaRemitos();
       } else {
         loginBox.style.display = "block";
         appBox.style.display = "none";
         desactivarLecturaStock();
+        desactivarLecturaRemitos();
       }
     });
 
     window.limpiarBusqueda = function () {
       document.getElementById("busqueda").value = "";
-      renderTabla();
+      window.renderTabla();
     };
 
     window.cambiarMarcaVista = function (marca, boton) {
@@ -568,7 +848,7 @@
       tabs.forEach(tab => tab.classList.remove("active"));
       boton.classList.add("active");
 
-      renderTabla();
+      window.renderTabla();
     };
 
     window.agregarProducto = async function () {
@@ -576,8 +856,9 @@
       const marca = document.getElementById("marca").value;
       const nombre = document.getElementById("nombre").value.trim();
       const cantidad = parseInt(document.getElementById("cantidad").value, 10);
+      const precio = parseFloat(document.getElementById("precio").value);
 
-      if (!codigo || !marca || !nombre || isNaN(cantidad) || cantidad < 0) {
+      if (!codigo || !marca || !nombre || isNaN(cantidad) || cantidad < 0 || isNaN(precio) || precio < 0) {
         mostrarMensaje("Completá todos los campos correctamente.", "error");
         return;
       }
@@ -596,7 +877,8 @@
           codigo,
           marca,
           nombre,
-          cantidad
+          cantidad,
+          precio
         });
 
         limpiarFormulario();
@@ -653,6 +935,306 @@
       }
     };
 
+    window.cambiarPrecio = async function (id) {
+      const nuevoPrecio = parseFloat(document.getElementById("precio-" + id).value);
+
+      if (isNaN(nuevoPrecio) || nuevoPrecio < 0) {
+        alert("Ingresá un precio válido.");
+        return;
+      }
+
+      try {
+        await update(ref(db, "stockPorMarca/" + id), {
+          precio: nuevoPrecio
+        });
+      } catch (error) {
+        console.error(error);
+        alert("No se pudo actualizar el precio.");
+      }
+    };
+
+    window.agregarCarrito = function (id) {
+      const input = document.getElementById("car-" + id);
+      const cantidad = parseInt(input.value, 10);
+
+      if (isNaN(cantidad) || cantidad <= 0) {
+        alert("Ingresá una cantidad válida.");
+        return;
+      }
+
+      const producto = productos.find(p => p.id === id);
+      if (!producto) return;
+
+      if (cantidad > producto.cantidad) {
+        alert("No hay suficiente stock.");
+        return;
+      }
+
+      const existente = carrito.find(item => item.id === id);
+      const cantidadActual = existente ? existente.cantidad : 0;
+
+      if (cantidadActual + cantidad > producto.cantidad) {
+        alert("La cantidad total en el remito supera el stock disponible.");
+        return;
+      }
+
+      if (existente) {
+        existente.cantidad += cantidad;
+      } else {
+        carrito.push({
+          id: producto.id,
+          codigo: producto.codigo,
+          nombre: producto.nombre,
+          precio: Number(producto.precio) || 0,
+          cantidad
+        });
+      }
+
+      input.value = "";
+      window.renderCarrito();
+      mostrarMensaje("Producto agregado al remito.", "ok");
+    };
+
+    window.generarRemito = async function () {
+      if (carrito.length === 0) {
+        alert("Agregá al menos un producto al remito.");
+        return;
+      }
+
+      const clienteNombre = document.getElementById("clienteNombre").value.trim();
+      const clienteDireccion = document.getElementById("clienteDireccion").value.trim();
+      const clienteCuit = document.getElementById("clienteCuit").value.trim();
+
+      const carritoGuardado = JSON.parse(JSON.stringify(carrito));
+
+      for (const item of carritoGuardado) {
+        const prodActual = productos.find(p => p.id === item.id);
+        if (!prodActual) {
+          alert("Uno de los productos ya no existe en stock.");
+          return;
+        }
+
+        const nuevaCantidad = Number(prodActual.cantidad || 0) - Number(item.cantidad || 0);
+        if (nuevaCantidad < 0) {
+          alert("No hay stock suficiente para emitir el remito.");
+          return;
+        }
+      }
+
+      let numero = 0;
+
+      try {
+        const resultado = await runTransaction(contadorRemitosRef, (actual) => (Number(actual) || 0) + 1);
+        numero = Number(resultado.snapshot.val() || 0);
+
+        const hoy = new Date();
+        const fechaVisual =
+          String(hoy.getDate()).padStart(2, "0") + "/" +
+          String(hoy.getMonth() + 1).padStart(2, "0") + "/" +
+          hoy.getFullYear();
+
+        let totalGeneral = 0;
+        carritoGuardado.forEach(item => {
+          totalGeneral += (Number(item.precio) || 0) * (Number(item.cantidad) || 0);
+        });
+
+        const remitoData = {
+          numero,
+          fecha: fechaVisual,
+          fechaIso: hoy.toISOString(),
+          clienteNombre,
+          clienteDireccion,
+          clienteCuit,
+          totalGeneral,
+          estado: "activo",
+          items: carritoGuardado
+        };
+
+        const actualizaciones = {};
+
+        carritoGuardado.forEach(item => {
+          const prodActual = productos.find(p => p.id === item.id);
+          actualizaciones["stockPorMarca/" + item.id + "/cantidad"] =
+            Number(prodActual.cantidad || 0) - Number(item.cantidad || 0);
+        });
+
+        actualizaciones["remitos/" + numero] = remitoData;
+
+        await update(ref(db), actualizaciones);
+
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+
+        let y = 20;
+
+        try {
+          const logo = new Image();
+          logo.src = "logo.png";
+          await new Promise((resolve, reject) => {
+            logo.onload = resolve;
+            logo.onerror = reject;
+          });
+          doc.addImage(logo, "png", 14, 10, 40, 22);
+        } catch (e) {
+          console.warn("No se pudo cargar el logo para el PDF.");
+        }
+
+        doc.setFontSize(16);
+        doc.text("Remito N° " + formatearNumeroRemito(numero), 140, 18);
+        doc.setFontSize(10);
+        doc.text("Fecha de emisión: " + fechaVisual, 140, 26);
+
+        doc.setFontSize(9);
+        doc.text("B-P Sanitarios S.R.L", 14, 42);
+        doc.text("Humberto Primo 2193", 14, 49);
+        doc.text("Burzaco (1852) Buenos Aires", 14, 56);
+        doc.text("bpsanitarios@gmail.com", 14, 63);
+        doc.text("Tel. 1168136926", 14, 70);
+
+        doc.setFillColor(235, 235, 235);
+        doc.rect(14, 78, 182, 8, "F");
+        doc.setFontSize(10);
+        doc.text("Cliente", 16, 83);
+        doc.text("Nombre: " + (clienteNombre || "-"), 14, 94);
+        doc.text("Dirección: " + (clienteDireccion || "-"), 14, 101);
+        doc.text("CUIT: " + (clienteCuit || "-"), 14, 108);
+
+        y = 118;
+        doc.setFillColor(235, 235, 235);
+        doc.rect(14, y - 5, 182, 8, "F");
+        doc.setFontSize(10);
+        doc.text("Cantidad", 16, y);
+        doc.text("Descripción", 45, y);
+        doc.text("P. unitario", 132, y);
+        doc.text("Total", 171, y);
+        y += 8;
+
+        carritoGuardado.forEach((item) => {
+          const total = (Number(item.precio) || 0) * Number(item.cantidad || 0);
+
+          if (y > 275) {
+            doc.addPage();
+            y = 20;
+          }
+
+          const descripcion = item.nombre.length > 38 ? item.nombre.slice(0, 38) + "..." : item.nombre;
+          doc.text(String(item.cantidad), 16, y);
+          doc.text(descripcion, 45, y);
+          doc.text("$" + Number(item.precio || 0).toFixed(2), 132, y);
+          doc.text("$" + total.toFixed(2), 171, y);
+          y += 7;
+        });
+
+        doc.setDrawColor(180);
+        doc.line(14, y + 5, 196, y + 5);
+        doc.setFontSize(12);
+        doc.text("Total general: $" + totalGeneral.toFixed(2), 14, y + 10);
+
+        doc.save("remito-" + formatearNumeroRemito(numero) + ".pdf");
+
+        carrito = [];
+        document.getElementById("clienteNombre").value = "";
+        document.getElementById("clienteDireccion").value = "";
+        document.getElementById("clienteCuit").value = "";
+        window.renderCarrito();
+        document.getElementById("remitoNumeroBuscar").value = numero;
+        remitoSeleccionado = remitoData;
+        renderVistaRemito(remitoData);
+        mostrarMensaje("Remito generado y guardado en Firebase correctamente.", "ok");
+      } catch (error) {
+        console.error(error);
+        alert("No se pudo generar el remito.");
+      }
+    };
+
+    async function obtenerRemitoPorNumero(numero) {
+      const numeroLimpio = Number(numero);
+      if (!numeroLimpio || numeroLimpio < 1) {
+        alert("Ingresá un número de remito válido.");
+        return null;
+      }
+
+      try {
+        const snapshot = await get(ref(db, "remitos/" + numeroLimpio));
+        if (!snapshot.exists()) {
+          alert("No se encontró ese remito.");
+          limpiarVistaRemito();
+          return null;
+        }
+
+        const remito = snapshot.val();
+        remitoSeleccionado = remito;
+        renderVistaRemito(remito);
+        return remito;
+      } catch (error) {
+        console.error(error);
+        alert("No se pudo consultar el remito.");
+        return null;
+      }
+    }
+
+    window.verRemito = async function () {
+      const numero = document.getElementById("remitoNumeroBuscar").value.trim();
+      await obtenerRemitoPorNumero(numero);
+    };
+
+    window.cargarRemitoDesdeLista = async function (numero) {
+      document.getElementById("remitoNumeroBuscar").value = numero;
+      await obtenerRemitoPorNumero(numero);
+    };
+
+    window.anularRemitoSeleccionado = async function () {
+      const numeroInput = document.getElementById("remitoNumeroBuscar").value.trim();
+      const numero = Number(numeroInput);
+
+      if (!numero || numero < 1) {
+        alert("Primero ingresá un número de remito.");
+        return;
+      }
+
+      let remito = remitoSeleccionado;
+      if (!remito || Number(remito.numero) !== numero) {
+        remito = await obtenerRemitoPorNumero(numero);
+        if (!remito) return;
+      }
+
+      if (remito.estado === "anulado") {
+        alert("Ese remito ya está anulado.");
+        return;
+      }
+
+      const confirmar = confirm("¿Querés anular el remito N° " + formatearNumeroRemito(numero) + "?");
+      if (!confirmar) return;
+
+      try {
+        const actualizaciones = {};
+
+        for (const item of remito.items || []) {
+          const prodActual = productos.find(p => p.id === item.id);
+          if (!prodActual) continue;
+
+          actualizaciones["stockPorMarca/" + item.id + "/cantidad"] =
+            Number(prodActual.cantidad || 0) + Number(item.cantidad || 0);
+        }
+
+        actualizaciones["remitos/" + numero + "/estado"] = "anulado";
+        actualizaciones["remitos/" + numero + "/fechaAnulacion"] = new Date().toISOString();
+
+        await update(ref(db), actualizaciones);
+
+        remitoSeleccionado = {
+          ...remito,
+          estado: "anulado",
+          fechaAnulacion: actualizaciones["remitos/" + numero + "/fechaAnulacion"]
+        };
+        renderVistaRemito(remitoSeleccionado);
+        mostrarMensaje("Remito anulado correctamente.", "ok");
+      } catch (error) {
+        console.error(error);
+        alert("No se pudo anular el remito.");
+      }
+    };
+
     function obtenerProductosFiltrados() {
       const busqueda = document.getElementById("busqueda").value.toLowerCase().trim();
 
@@ -677,9 +1259,10 @@
       if (productosFiltrados.length === 0) {
         tabla.innerHTML = `
           <tr>
-            <td colspan="6" class="empty">No hay productos para mostrar.</td>
+            <td colspan="8" class="empty">No hay productos para mostrar.</td>
           </tr>
         `;
+        window.renderCarrito();
         return;
       }
 
@@ -696,6 +1279,19 @@
           <td data-label="Cantidad" class="${claseStock}">
             ${producto.cantidad}${textoAlerta}
           </td>
+          <td data-label="Precio">
+            <div class="row-actions">
+              <input
+                type="number"
+                id="precio-${producto.id}"
+                class="small-input"
+                min="0"
+                step="0.01"
+                value="${Number(producto.precio || 0).toFixed(2)}"
+              />
+              <button class="btn-success" onclick="cambiarPrecio('${producto.id}')">✔</button>
+            </div>
+          </td>
           <td data-label="Movimiento">
             <div class="row-actions">
               <input
@@ -709,6 +1305,18 @@
               <button class="btn-danger" onclick="cambiarCantidad('${producto.id}', 'restar')">-</button>
             </div>
           </td>
+          <td data-label="Carrito">
+            <div class="row-actions">
+              <input
+                type="number"
+                id="car-${producto.id}"
+                class="small-input"
+                min="1"
+                placeholder="Cant."
+              />
+              <button class="btn-primary" onclick="agregarCarrito('${producto.id}')">Agregar</button>
+            </div>
+          </td>
           <td data-label="Eliminar">
             <button class="btn-danger" onclick="eliminarProducto('${producto.id}')">Eliminar</button>
           </td>
@@ -717,6 +1325,84 @@
         tabla.appendChild(fila);
       });
     };
+
+
+    window.renderCarrito = function () {
+      const tabla = document.getElementById("tablaCarrito");
+      const vacio = document.getElementById("carritoVacio");
+      const totalTexto = document.getElementById("totalGeneralRemito");
+
+      if (!tabla || !vacio || !totalTexto) return;
+
+      tabla.innerHTML = "";
+
+      if (!carrito || carrito.length === 0) {
+        vacio.style.display = "block";
+        totalTexto.textContent = "$0,00";
+        return;
+      }
+
+      vacio.style.display = "none";
+
+      let totalGeneral = 0;
+
+      carrito.forEach((item, index) => {
+        const total = (Number(item.precio) || 0) * (Number(item.cantidad) || 0);
+        totalGeneral += total;
+
+        const fila = document.createElement("tr");
+        fila.innerHTML = `
+          <td data-label="Cantidad">${item.cantidad}</td>
+          <td data-label="Descripción">${item.nombre}</td>
+          <td data-label="Unitario">$${Number(item.precio || 0).toLocaleString("es-AR", {minimumFractionDigits:2, maximumFractionDigits:2})}</td>
+          <td data-label="Total">$${Number(total).toLocaleString("es-AR", {minimumFractionDigits:2, maximumFractionDigits:2})}</td>
+          <td data-label="Acciones">
+            <div class="row-actions">
+              <input type="number" id="edit-car-${index}" class="small-input" min="1" value="${item.cantidad}">
+              <button class="btn-success" onclick="modificarCantidadCarrito(${index})">✔</button>
+              <button class="btn-danger" onclick="eliminarDelCarrito(${index})">Eliminar</button>
+            </div>
+          </td>
+        `;
+        tabla.appendChild(fila);
+      });
+
+      totalTexto.textContent = "$" + Number(totalGeneral).toLocaleString("es-AR", {minimumFractionDigits:2, maximumFractionDigits:2});
+    };
+
+    window.modificarCantidadCarrito = function (index) {
+      const input = document.getElementById("edit-car-" + index);
+      const nuevaCantidad = parseInt(input.value, 10);
+
+      if (isNaN(nuevaCantidad) || nuevaCantidad <= 0) {
+        alert("Ingresá una cantidad válida.");
+        return;
+      }
+
+      const item = carrito[index];
+      if (!item) return;
+
+      const productoActual = productos.find(p => p.id === item.id);
+      const cantidadYaEnCarrito = carrito
+        .filter((_, i) => i !== index && _.id === item.id)
+        .reduce((acc, curr) => acc + Number(curr.cantidad || 0), 0);
+
+      const disponibleTotal = Number(productoActual?.cantidad || 0) + Number(item.cantidad || 0) - cantidadYaEnCarrito;
+
+      if (nuevaCantidad > disponibleTotal) {
+        alert("No hay suficiente stock para esa cantidad.");
+        return;
+      }
+
+      carrito[index].cantidad = nuevaCantidad;
+      window.renderCarrito();
+    };
+
+    window.eliminarDelCarrito = function (index) {
+      carrito.splice(index, 1);
+      window.renderCarrito();
+    };
+
 
     window.exportarPDF = function () {
       const { jsPDF } = window.jspdf;
