@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Historial de Remitos - B-P Sanitarios</title>
+  <style>
+    *{box-sizing:border-box;font-family:Arial,sans-serif;}
+    body{margin:0;background:#f3f3f3;color:#111;}
+    .container{max-width:1250px;margin:30px auto;padding:20px;}
+    h1{text-align:center;color:#111;font-size:42px;margin-bottom:8px;font-weight:bold;}
+    .subtitulo{text-align:center;color:#666;font-size:24px;margin-bottom:24px;font-weight:bold;}
+    .card{background:#1b1b1b;border-radius:12px;padding:18px;margin-bottom:20px;border:1px solid #2b2b2b;color:#fff;}
+    .card h2,.card h3{margin-top:0;color:#fff;}
+    .topbar{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:18px;}
+    .muted{color:#bbb;}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;}
+    .grid-2{display:grid;grid-template-columns:2fr 1fr;gap:20px;align-items:start;}
+    input,select{width:100%;padding:10px;border-radius:6px;border:1px solid #333;background:#fff;color:#000;}
+    input:focus,select:focus{border-color:#ff2b2b;outline:none;}
+    button,a.btn-link{border:none;border-radius:6px;padding:10px 14px;cursor:pointer;font-weight:bold;text-decoration:none;display:inline-block;text-align:center;}
+    .btn-primary{background:#ff2b2b;color:#fff;}
+    .btn-success{background:#28a745;color:#fff;}
+    .btn-danger{background:#c82333;color:#fff;}
+    .btn-secondary{background:#444;color:#fff;}
+    .btn-light{background:#fff;color:#111;}
+    .search-row{display:flex;gap:10px;flex-wrap:wrap;}
+    .search-row > *{flex:1 1 220px;}
+    table{width:100%;border-collapse:collapse;margin-top:10px;background:#fff;color:#000;border-radius:10px;overflow:hidden;}
+    th,td{padding:12px;border-bottom:1px solid #ddd;text-align:left;vertical-align:top;}
+    th{background:#ff2b2b;color:#fff;}
+    tr:hover{background:#f7f7f7;}
+    .estado-activo{color:#008f4c;font-weight:bold;}
+    .estado-anulado{color:#d60000;font-weight:bold;}
+    .empty{text-align:center;color:#666;padding:20px 0;}
+    .listado{display:grid;gap:10px;}
+    .item-card{background:#fff;color:#000;border-radius:10px;border:1px solid #ddd;padding:12px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;}
+    .item-card strong{color:#111;}
+    .editor-box{background:#fff;color:#000;border-radius:10px;padding:14px;border:1px solid #ddd;}
+    .editor-box h3{color:#111;margin:0 0 14px 0;}
+    .item-edit{border:1px solid #ddd;border-radius:10px;padding:10px;margin-bottom:10px;background:#fafafa;}
+    .item-edit-grid{display:grid;grid-template-columns:1.4fr 1fr 1fr auto;gap:10px;align-items:end;}
+    .totales{display:flex;justify-content:flex-end;margin-top:12px;font-weight:bold;color:#111;}
+    .tools-row{display:flex;gap:8px;flex-wrap:wrap;align-items:end;}
+    .tools-row > *{flex:1 1 180px;}
+    .badge{display:inline-block;padding:4px 8px;border-radius:999px;font-size:12px;font-weight:bold;}
+    .badge-red{background:#ffe1e1;color:#a40000;}
+    .badge-green{background:#dff8ea;color:#046c3a;}
+    .helper{font-size:13px;color:#666;margin-top:6px;}
+    .msg{margin-top:10px;font-weight:bold;min-height:18px;}
+    .msg.ok{color:#00d26a;}
+    .msg.error{color:#ff6b6b;}
+
+    @media (max-width:900px){
+      .grid-2{grid-template-columns:1fr;}
+    }
+    @media (max-width:768px){
+      h1{font-size:32px;}
+      .subtitulo{font-size:20px;}
+      table,thead,tbody,th,td,tr{display:block;}
+      thead{display:none;}
+      tr{background:#fff;border:1px solid #ddd;border-radius:10px;padding:10px;margin-bottom:12px;}
+      td{border:none;padding:8px 0;}
+      td::before{content:attr(data-label);display:block;font-weight:bold;color:#111;margin-bottom:4px;}
+      .item-edit-grid{grid-template-columns:1fr;}
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="topbar">
+      <a href="index.html" class="btn-link btn-secondary">← Volver al sistema</a>
+      <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        <button class="btn-secondary" onclick="cargarUltimosRemitos()">Recargar</button>
+        <button class="btn-danger" onclick="cerrarSesion()">Cerrar sesión</button>
+      </div>
+    </div>
+
+    <h1>B-P Sanitarios</h1>
+    <div class="subtitulo">Historial, búsqueda y edición de remitos</div>
+
+    <div class="card">
+      <h2>Buscar remitos</h2>
+      <div class="search-row">
+        <input type="number" id="buscarNumero" placeholder="Buscar por número de remito" min="1" />
+        <button class="btn-primary" onclick="buscarPorNumero()">Buscar</button>
+        <button class="btn-light" onclick="limpiarBusqueda()">Limpiar</button>
+      </div>
+      <div class="helper">Esta página muestra los últimos 20 remitos y además te deja buscar cualquier remito por número.</div>
+      <div id="mensaje" class="msg"></div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <h2>Últimos 20 remitos</h2>
+        <div id="listaRemitos" class="listado"></div>
+      </div>
+
+      <div class="card">
+        <h2>Editar remito</h2>
+        <div id="editorVacio" class="muted">Seleccioná un remito para verlo y editarlo.</div>
+        <div id="editorRemito" style="display:none;"></div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
+    import { getDatabase, ref, get, update, query, orderByChild, limitToLast } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-database.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCtn8b4kpU616tgH56Gw-NDH0o5zLDn48Q",
+      authDomain: "bpsanitariossrl.firebaseapp.com",
+      databaseURL: "https://bpsanitariossrl-default-rtdb.firebaseio.com",
+      projectId: "bpsanitariossrl",
+      storageBucket: "bpsanitariossrl.firebasestorage.app",
+      messagingSenderId: "761286267293",
+      appId: "1:761286267293:web:bfe8bf3e25a9fe22621f74",
+      measurementId: "G-BMJXXK58E2"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const auth = getAuth(app);
+
+    let stock = [];
+    let remitoActual = null;
+    let remitosCargados = [];
+
+    function msg(texto, tipo = "") {
+      const el = document.getElementById("mensaje");
+      el.textContent = texto || "";
+      el.className = "msg " + tipo;
+      if (texto) {
+        setTimeout(() => {
+          el.textContent = "";
+          el.className = "msg";
+        }, 3500);
+      }
+    }
+
+    function formatearNumeroRemito(numero) {
+      return String(Number(numero) || 0).padStart(8, "0");
+    }
+
+    function formatearFecha(fechaIso) {
+      if (!fechaIso) return "-";
+      const f = new Date(fechaIso);
+      if (Number.isNaN(f.getTime())) return fechaIso;
+      return f.toLocaleString("es-AR");
+    }
+
+    function formatearMoneda(valor) {
+      return "$" + Number(valor || 0).toLocaleString("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    async function cargarStock() {
+      const snap = await get(ref(db, "stockPorMarca"));
+      const data = snap.val() || {};
+      stock = Object.entries(data).map(([id, item]) => ({ id, ...item }));
+    }
+
+    function calcularTotal(items) {
+      return (items || []).reduce((acc, item) => acc + (Number(item.cantidad || 0) * Number(item.precio || 0)), 0);
+    }
+
+    function renderLista(remitos) {
+      const cont = document.getElementById("listaRemitos");
+      if (!remitos || remitos.length === 0) {
+        cont.innerHTML = '<div class="item-card"><div>No hay remitos para mostrar.</div></div>';
+        return;
+      }
+
+      cont.innerHTML = remitos.map(remito => `
+        <div class="item-card">
+          <div>
+            <strong>Remito N° ${formatearNumeroRemito(remito.numero)}</strong><br>
+            <span>${remito.clienteNombre || "Sin cliente"}</span><br>
+            <span class="muted">${formatearFecha(remito.fechaIso || remito.fecha)}</span><br>
+            <span class="${remito.estado === "anulado" ? "estado-anulado" : "estado-activo"}">${remito.estado || "activo"}</span>
+            <span class="muted"> · ${formatearMoneda(remito.totalGeneral)}</span>
+          </div>
+          <div>
+            <button class="btn-primary" onclick="abrirRemito(${Number(remito.numero)})">Ver / editar</button>
+          </div>
+        </div>
+      `).join("");
+    }
+
+    function getEditorItems() {
+      const blocks = document.querySelectorAll(".item-edit");
+      const items = [];
+      blocks.forEach(block => {
+        const id = block.dataset.id;
+        const codigo = block.querySelector(".item-codigo").value.trim();
+        const nombre = block.querySelector(".item-nombre").value.trim();
+        const cantidad = Number(block.querySelector(".item-cantidad").value);
+        const precio = Number(block.querySelector(".item-precio").value);
+        if (!id || !nombre || !codigo || !cantidad || cantidad < 1 || Number.isNaN(precio) || precio < 0) return;
+        items.push({ id, codigo, nombre, cantidad, precio });
+      });
+      return items;
+    }
+
+    function actualizarTotalEditor() {
+      const total = calcularTotal(getEditorItems());
+      const el = document.getElementById("totalEditor");
+      if (el) el.textContent = formatearMoneda(total);
+    }
+
+    function renderEditor(remito) {
+      remitoActual = JSON.parse(JSON.stringify(remito));
+      document.getElementById("editorVacio").style.display = "none";
+      const cont = document.getElementById("editorRemito");
+      const editable = remito.estado !== "anulado";
+      const badge = remito.estado === "anulado"
+        ? '<span class="badge badge-red">Anulado</span>'
+        : '<span class="badge badge-green">Activo</span>';
+
+      cont.style.display = "block";
+      cont.innerHTML = `
+        <div class="editor-box">
+          <h3>Remito N° ${formatearNumeroRemito(remito.numero)} ${badge}</h3>
+          <div class="grid">
+            <div>
+              <label>Cliente</label>
+              <input id="editClienteNombre" value="${remito.clienteNombre || ""}" ${!editable ? "disabled" : ""} />
+            </div>
+            <div>
+              <label>Dirección</label>
+              <input id="editClienteDireccion" value="${remito.clienteDireccion || ""}" ${!editable ? "disabled" : ""} />
+            </div>
+            <div>
+              <label>CUIT</label>
+              <input id="editClienteCuit" value="${remito.clienteCuit || ""}" ${!editable ? "disabled" : ""} />
+            </div>
+            <div>
+              <label>Fecha</label>
+              <input value="${formatearFecha(remito.fechaIso || remito.fecha)}" disabled />
+            </div>
+          </div>
+
+          <div style="margin-top:16px; display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap;">
+            <h3 style="margin:0;">Productos del remito</h3>
+            ${editable ? '<button class="btn-secondary" onclick="agregarProductoEditor()">+ Agregar producto</button>' : ''}
+          </div>
+
+          <div id="itemsEditor" style="margin-top:10px;"></div>
+
+          ${editable ? `
+          <div class="card" style="margin-top:14px; background:#f7f7f7; color:#111; border:1px solid #ddd;">
+            <h3 style="color:#111;">Agregar producto desde stock</h3>
+            <div class="tools-row">
+              <select id="nuevoProductoId">
+                <option value="">Seleccionar producto</option>
+                ${stock.map(p => `<option value="${p.id}">${p.codigo} - ${p.nombre} (${p.marca}) · Stock: ${p.cantidad}</option>`).join("")}
+              </select>
+              <input type="number" id="nuevoProductoCantidad" min="1" placeholder="Cantidad" />
+              <button class="btn-primary" onclick="sumarProductoDesdeStock()">Agregar al remito</button>
+            </div>
+          </div>` : ''}
+
+          <div class="totales">Total general: <span id="totalEditor" style="margin-left:8px;">${formatearMoneda(remito.totalGeneral)}</span></div>
+
+          ${editable ? `
+          <div style="margin-top:14px; display:flex; gap:10px; flex-wrap:wrap;">
+            <button class="btn-success" onclick="guardarCambiosRemito()">Guardar cambios</button>
+            <button class="btn-light" onclick="restaurarEditor()">Deshacer cambios</button>
+          </div>` : '<div class="helper">Los remitos anulados se pueden ver, pero no editar.</div>'}
+        </div>
+      `;
+
+      renderItemsEditor(remito.items || [], editable);
+    }
+
+    function renderItemsEditor(items, editable) {
+      const cont = document.getElementById("itemsEditor");
+      cont.innerHTML = "";
+
+      if (!items || items.length === 0) {
+        cont.innerHTML = '<div class="helper">Este remito no tiene productos.</div>';
+        actualizarTotalEditor();
+        return;
+      }
+
+      items.forEach((item, index) => {
+        const div = document.createElement("div");
+        div.className = "item-edit";
+        div.dataset.id = item.id || "";
+        div.innerHTML = `
+          <div class="item-edit-grid">
+            <div>
+              <label>Descripción</label>
+              <input class="item-nombre" value="${item.nombre || ""}" ${!editable ? "disabled" : ""} />
+              <input class="item-codigo" type="hidden" value="${item.codigo || ""}" />
+            </div>
+            <div>
+              <label>Cantidad</label>
+              <input type="number" min="1" class="item-cantidad" value="${Number(item.cantidad || 1)}" ${!editable ? "disabled" : ""} oninput="actualizarTotalEditor()" />
+            </div>
+            <div>
+              <label>Precio</label>
+              <input type="number" min="0" step="0.01" class="item-precio" value="${Number(item.precio || 0)}" ${!editable ? "disabled" : ""} oninput="actualizarTotalEditor()" />
+            </div>
+            <div>
+              ${editable ? `<button class="btn-danger" onclick="eliminarItemEditor(${index})">Quitar</button>` : ''}
+            </div>
+          </div>
+          <div class="helper">Código: ${item.codigo || '-'} ${item.id ? '· Vinculado al stock' : ''}</div>
+        `;
+        cont.appendChild(div);
+      });
+
+      actualizarTotalEditor();
+    }
+
+    async function obtenerRemito(numero) {
+      const snap = await get(ref(db, "remitos/" + Number(numero)));
+      if (!snap.exists()) return null;
+      return snap.val();
+    }
+
+    window.abrirRemito = async function(numero) {
+      try {
+        await cargarStock();
+        const remito = await obtenerRemito(numero);
+        if (!remito) {
+          msg("No se encontró ese remito.", "error");
+          return;
+        }
+        renderEditor(remito);
+      } catch (error) {
+        console.error(error);
+        msg("No se pudo abrir el remito.", "error");
+      }
+    };
+
+    window.buscarPorNumero = async function() {
+      const numero = Number(document.getElementById("buscarNumero").value);
+      if (!numero || numero < 1) {
+        msg("Ingresá un número válido.", "error");
+        return;
+      }
+      await window.abrirRemito(numero);
+    };
+
+    window.limpiarBusqueda = function() {
+      document.getElementById("buscarNumero").value = "";
+      document.getElementById("editorRemito").style.display = "none";
+      document.getElementById("editorVacio").style.display = "block";
+      remitoActual = null;
+    };
+
+    window.eliminarItemEditor = function(index) {
+      if (!remitoActual) return;
+      remitoActual.items.splice(index, 1);
+      renderItemsEditor(remitoActual.items, true);
+    };
+
+    window.agregarProductoEditor = function() {
+      if (!remitoActual) return;
+      remitoActual.items.push({ id: "", codigo: "", nombre: "", cantidad: 1, precio: 0 });
+      renderItemsEditor(remitoActual.items, true);
+    };
+
+    window.sumarProductoDesdeStock = function() {
+      if (!remitoActual) return;
+      const id = document.getElementById("nuevoProductoId").value;
+      const cantidad = Number(document.getElementById("nuevoProductoCantidad").value);
+      if (!id || !cantidad || cantidad < 1) {
+        msg("Elegí un producto y una cantidad válida.", "error");
+        return;
+      }
+
+      const producto = stock.find(p => p.id === id);
+      if (!producto) {
+        msg("No se encontró el producto seleccionado.", "error");
+        return;
+      }
+
+      const yaEnRemito = getEditorItems().filter(i => i.id === id).reduce((acc, i) => acc + Number(i.cantidad || 0), 0);
+      const original = (remitoActual.items || []).filter(i => i.id === id).reduce((acc, i) => acc + Number(i.cantidad || 0), 0);
+      const stockDisponible = Number(producto.cantidad || 0) + original - yaEnRemito;
+
+      if (cantidad > stockDisponible) {
+        msg("No hay stock suficiente para agregar esa cantidad.", "error");
+        return;
+      }
+
+      remitoActual.items.push({
+        id: producto.id,
+        codigo: producto.codigo,
+        nombre: producto.nombre,
+        cantidad,
+        precio: Number(producto.precio || 0)
+      });
+
+      renderItemsEditor(remitoActual.items, true);
+      document.getElementById("nuevoProductoId").value = "";
+      document.getElementById("nuevoProductoCantidad").value = "";
+      msg("Producto agregado al editor.", "ok");
+    };
+
+    window.actualizarTotalEditor = actualizarTotalEditor;
+
+    window.restaurarEditor = function() {
+      if (remitoActual) renderEditor(remitoActual);
+    };
+
+    window.guardarCambiosRemito = async function() {
+      if (!remitoActual) return;
+
+      try {
+        await cargarStock();
+        const remitoOriginal = await obtenerRemito(remitoActual.numero);
+        if (!remitoOriginal) {
+          msg("Ese remito ya no existe.", "error");
+          return;
+        }
+        if (remitoOriginal.estado === "anulado") {
+          msg("Ese remito fue anulado y ya no se puede editar.", "error");
+          renderEditor(remitoOriginal);
+          return;
+        }
+
+        const nuevosItems = getEditorItems();
+        if (nuevosItems.length === 0) {
+          msg("El remito debe tener al menos un producto.", "error");
+          return;
+        }
+
+        const stockActualMap = Object.fromEntries(stock.map(p => [p.id, p]));
+        const originalPorId = {};
+        const nuevoPorId = {};
+
+        (remitoOriginal.items || []).forEach(item => {
+          if (!item.id) return;
+          originalPorId[item.id] = (originalPorId[item.id] || 0) + Number(item.cantidad || 0);
+        });
+
+        nuevosItems.forEach(item => {
+          if (!item.id) return;
+          nuevoPorId[item.id] = (nuevoPorId[item.id] || 0) + Number(item.cantidad || 0);
+        });
+
+        const ids = [...new Set([...Object.keys(originalPorId), ...Object.keys(nuevoPorId)])];
+        const actualizaciones = {};
+
+        for (const id of ids) {
+          const producto = stockActualMap[id];
+          if (!producto) {
+            msg("Uno de los productos del remito ya no existe en stock.", "error");
+            return;
+          }
+          const stockFinal = Number(producto.cantidad || 0) + Number(originalPorId[id] || 0) - Number(nuevoPorId[id] || 0);
+          if (stockFinal < 0) {
+            msg(`No hay stock suficiente para ${producto.nombre}.`, "error");
+            return;
+          }
+          actualizaciones["stockPorMarca/" + id + "/cantidad"] = stockFinal;
+        }
+
+        const clienteNombre = document.getElementById("editClienteNombre").value.trim();
+        const clienteDireccion = document.getElementById("editClienteDireccion").value.trim();
+        const clienteCuit = document.getElementById("editClienteCuit").value.trim();
+        const totalGeneral = calcularTotal(nuevosItems);
+
+        actualizaciones["remitos/" + remitoOriginal.numero] = {
+          ...remitoOriginal,
+          clienteNombre,
+          clienteDireccion,
+          clienteCuit,
+          items: nuevosItems,
+          totalGeneral,
+          fechaEdicion: new Date().toISOString()
+        };
+
+        await update(ref(db), actualizaciones);
+        msg("Remito actualizado correctamente.", "ok");
+        await cargarUltimosRemitos();
+        const remitoRecargado = await obtenerRemito(remitoOriginal.numero);
+        renderEditor(remitoRecargado);
+      } catch (error) {
+        console.error(error);
+        msg("No se pudieron guardar los cambios.", "error");
+      }
+    };
+
+    window.cerrarSesion = async function() {
+      try {
+        await signOut(auth);
+      } catch (error) {
+        console.error(error);
+        msg("No se pudo cerrar la sesión.", "error");
+      }
+    };
+
+    async function cargarUltimosRemitos() {
+      try {
+        const q = query(ref(db, "remitos"), orderByChild("numero"), limitToLast(20));
+        const snap = await get(q);
+        const data = snap.val() || {};
+        remitosCargados = Object.values(data).sort((a, b) => Number(b.numero || 0) - Number(a.numero || 0));
+        renderLista(remitosCargados);
+      } catch (error) {
+        console.error(error);
+        msg("No se pudieron cargar los remitos.", "error");
+      }
+    }
+
+    window.cargarUltimosRemitos = cargarUltimosRemitos;
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        window.location.href = "index.html";
+        return;
+      }
+      await cargarStock();
+      await cargarUltimosRemitos();
+    });
+  </script>
+</body>
+</html>

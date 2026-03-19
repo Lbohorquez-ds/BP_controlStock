@@ -122,18 +122,48 @@ background:#1a1a1a;
 }
 
 .row-actions{
-display:flex;
-gap:6px;
-align-items:center;
-flex-wrap:wrap;
+  display:flex;
+  gap:6px;
+  align-items:center;
+  flex-wrap:wrap;
 }
 
 .small-input{
-width:70px;
-padding:8px;
-background:#111;
-border:1px solid #333;
-color:white;
+  width: 150px !important;
+  min-width: 150px !important;
+  padding:8px;
+  background:#fff;
+  border:1px solid #333;
+  color:#000;
+}
+
+.precio-box{
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+
+.precio-input{
+  Flex:1;
+  min-width:150px;
+}
+
+
+.mov-box{
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+}
+
+.mov-btns{
+  display:flex;
+  gap:8px;
+}
+
+.mov-btns button{
+  display:flex;	
+  gap:8px;
+  margin-top:2px;	
 }
 
 .stock-ok{
