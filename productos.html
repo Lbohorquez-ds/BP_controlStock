@@ -339,11 +339,6 @@
       color:#666;
     }
 
-    .search-help{
-      margin-top:10px;
-      color:#bbb;
-    }
-
     @media (max-width:768px){
       h1{
         font-size:36px;
@@ -422,13 +417,14 @@
   <!-- APP -->
   <div id="app" style="display:none;">
     <div class="container">
-      <div class="top-actions">
+      <div class="top-actions" style="gap:10px; flex-wrap:wrap;">
+        <button class="btn-secondary" onclick="window.location.href='index.html'">Volver al inicio</button>
         <button class="btn-logout" onclick="cerrarSesion()">Cerrar sesión</button>
       </div>
 
 
       <h1>B-P Sanitarios</h1>
-      <div class="subtitulo">Sistema de Control de Stock</div>
+      <div class="subtitulo">Todos los productos</div>
 
       <div class="card">
         <h2>Agregar producto</h2>
@@ -455,25 +451,20 @@
       </div>
 
       <div class="card">
-        <h2>Buscar productos</h2>
+        <h2>Buscar</h2>
         <div class="search-row">
           <input
             type="text"
             id="busqueda"
             placeholder="Buscar por código o nombre"
-            onkeydown="if(event.key === 'Enter') buscarProductos()"
+            oninput="renderTabla()"
           />
-          <button class="btn-primary" onclick="buscarProductos()">Buscar</button>
           <button class="btn-secondary" onclick="limpiarBusqueda()">Limpiar</button>
-          <button class="btn-secondary" onclick="window.location.href='productos.html'">Ver todos los productos</button>
-        </div>
-        <div style="margin-top:10px; color:#bbb;">
-          La búsqueda muestra solo los resultados que pedís. El listado completo se abre en otra página.
         </div>
       </div>
 
-      <div class="card" id="resultadosBusquedaCard" style="display:none;">
-        <h2>Resultados de búsqueda</h2>
+      <div class="card">
+        <h2>Productos</h2>
 
         <div class="tabs">
           <button class="tab active" onclick="cambiarMarcaVista('Todas', this)">Todas</button>
@@ -500,58 +491,10 @@
           <tbody id="tablaStock"></tbody>
         </table>
       </div>
-
-      <div class="card">
-        <h2>Remito</h2>
-        <div class="grid">
-          <input type="text" id="clienteNombre" placeholder="Nombre o razón social" />
-          <input type="text" id="clienteDireccion" placeholder="Dirección" />
-          <input type="text" id="clienteCuit" placeholder="CUIT" />
-        </div>
-
-        <div class="remito-actions">
-          <button class="btn-success" onclick="generarRemito()">Generar remito</button>
-        </div>
-      </div>
-
-     
-
-      <div class="card">
-        <h2>Carrito / Remito</h2>
-        <table>
-          <thead>
-            <tr>
-              <th>Cantidad</th>
-              <th>Descripción</th>
-              <th>Unitario</th>
-              <th>Total</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody id="tablaCarrito"></tbody>
-        </table>
-
-        <div id="carritoVacio" class="empty">No hay productos agregados al remito.</div>
-
-        <div style="margin-top:12px; font-weight:bold; color:white; text-align:right;">
+<div style="margin-top:12px; font-weight:bold; color:white; text-align:right;">
           Total general: <span id="totalGeneralRemito">$0,00</span>
         </div>
       </div>
-        
-     <div class="card">
-        <h2>Consultar / anular remito</h2>
-
-        <div class="remito-tools">
-          <input
-            type="number"
-            id="remitoNumeroBuscar"
-            placeholder="Número de remito"
-            min="1"
-          />
-          <button class="btn-secondary" onclick="verRemito()">Ver remito</button>
-          <button class="btn-danger" onclick="anularRemitoSeleccionado()">Anular remito</button>
-        </div>
-
         <div id="remitoPreview" class="remito-preview" style="display:none;"></div>
 
         <div class="recent-remitos">
@@ -614,7 +557,6 @@
     let carrito = [];
     let listenerRemitosActivo = false;
     let remitoSeleccionado = null;
-    let busquedaEjecutada = false;
 
     function mostrarMensaje(texto, tipo) {
       const mensaje = document.getElementById("mensaje");
@@ -838,30 +780,15 @@
         loginBox.style.display = "none";
         appBox.style.display = "block";
         activarLecturaStock();
-        activarLecturaRemitos();
       } else {
         loginBox.style.display = "block";
         appBox.style.display = "none";
         desactivarLecturaStock();
-        desactivarLecturaRemitos();
       }
     });
 
     window.limpiarBusqueda = function () {
       document.getElementById("busqueda").value = "";
-      busquedaEjecutada = false;
-      marcaActual = "Todas";
-      const tabs = document.querySelectorAll(".tab");
-      tabs.forEach((tab, index) => tab.classList.toggle("active", index === 0));
-      const card = document.getElementById("resultadosBusquedaCard");
-      if (card) card.style.display = "none";
-      window.renderTabla();
-    };
-
-    window.buscarProductos = function () {
-      busquedaEjecutada = true;
-      const card = document.getElementById("resultadosBusquedaCard");
-      if (card) card.style.display = "block";
       window.renderTabla();
     };
 
@@ -1262,14 +1189,10 @@
     function obtenerProductosFiltrados() {
       const busqueda = document.getElementById("busqueda").value.toLowerCase().trim();
 
-      let productosFiltrados = productos;
-
-      if (busqueda) {
-        productosFiltrados = productos.filter(p =>
-          String(p.nombre || "").toLowerCase().includes(busqueda) ||
-          String(p.codigo || "").toLowerCase().includes(busqueda)
-        );
-      }
+      let productosFiltrados = productos.filter(p =>
+        p.nombre.toLowerCase().includes(busqueda) ||
+        p.codigo.toLowerCase().includes(busqueda)
+      );
 
       if (marcaActual !== "Todas") {
         productosFiltrados = productosFiltrados.filter(p => p.marca === marcaActual);
@@ -1280,25 +1203,14 @@
 
     window.renderTabla = function () {
       const tabla = document.getElementById("tablaStock");
-      const card = document.getElementById("resultadosBusquedaCard");
-      if (!tabla) return;
-
-      if (!busquedaEjecutada) {
-        tabla.innerHTML = "";
-        if (card) card.style.display = "none";
-        window.renderCarrito();
-        return;
-      }
-
       const productosFiltrados = obtenerProductosFiltrados();
 
       tabla.innerHTML = "";
-      if (card) card.style.display = "block";
 
       if (productosFiltrados.length === 0) {
         tabla.innerHTML = `
           <tr>
-            <td colspan="8" class="empty">No se encontraron productos con esa búsqueda.</td>
+            <td colspan="8" class="empty">No hay productos para mostrar.</td>
           </tr>
         `;
         window.renderCarrito();
