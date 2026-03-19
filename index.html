@@ -1280,32 +1280,34 @@
             ${producto.cantidad}${textoAlerta}
           </td>
           <td data-label="Precio">
-            <div class="row-actions">
-              <input
-                type="number"
-                id="precio-${producto.id}"
-                class="small-input"
-                min="0"
-                step="0.01"
-                value="${Number(producto.precio || 0).toFixed(2)}"
-              />
-              <button class="btn-success" onclick="cambiarPrecio('${producto.id}')">✔</button>
-            </div>
-          </td>
-          <td data-label="Movimiento">
-            <div class="row-actions">
-              <input
-                type="number"
-                id="mov-${producto.id}"
-                class="small-input"
-                min="1"
-                placeholder="Cant."
-              />
-              <button class="btn-success" onclick="cambiarCantidad('${producto.id}', 'sumar')">+</button>
-              <button class="btn-danger" onclick="cambiarCantidad('${producto.id}', 'restar')">-</button>
-            </div>
-          </td>
-          <td data-label="Carrito">
+  <div class="row-actions precio-box">
+    <input
+      type="number"
+      id="precio-${producto.id}"
+      class="small-input precio-input"
+      min="0"
+      step="0.01"
+      value="${Number(producto.precio || 0).toFixed(2)}"
+    />
+    <button class="btn-success" onclick="cambiarPrecio('${producto.id}')">✔</button>
+  </div>
+</td>
+<td data-label="Movimiento">
+  <div class="mov-box">
+    <input
+      type="number"
+      id="mov-${producto.id}"
+      class="small-input"
+      min="1"
+      placeholder="Cant."
+    />
+    <div class="mov-btns">
+      <button class="btn-success" onclick="cambiarCantidad('${producto.id}', 'sumar')">+</button>
+      <button class="btn-danger" onclick="cambiarCantidad('${producto.id}', 'restar')">-</button>
+    </div>
+  </div>
+</td>
+        <td data-label="Carrito">
             <div class="row-actions">
               <input
                 type="number"
