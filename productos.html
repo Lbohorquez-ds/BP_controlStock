@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Productos - B-P Sanitarios</title>
+  <style>
+    *{box-sizing:border-box;font-family:Arial,sans-serif}
+    body{margin:0;background:#f3f3f3;color:#fff}
+    .container{max-width:1280px;margin:30px auto;padding:20px}
+    h1{text-align:center;color:#111;font-size:46px;margin:0 0 8px;font-weight:700}
+    .subtitulo{text-align:center;color:#555;font-size:28px;margin:0 0 25px;font-weight:700}
+    .card{background:#1b1b1b;border-radius:12px;padding:18px;margin-bottom:20px;border:1px solid #2b2b2b}
+    h2{margin:0 0 14px;color:#fff}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
+    input,select{width:100%;padding:10px;border-radius:6px;border:1px solid #333;background:#fff;color:#000}
+    input:focus,select:focus{border-color:#ff2b2b;outline:none}
+    button{border:none;border-radius:6px;padding:10px 14px;cursor:pointer;font-weight:bold}
+    .btn-primary{background:#ff2b2b;color:#fff}
+    .btn-success{background:#28a745;color:#fff}
+    .btn-danger{background:#c82333;color:#fff}
+    .btn-secondary{background:#444;color:#fff}
+    .btn-logout{background:#444;color:#fff}
+    .top-actions{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:15px}
+    .top-actions a{text-decoration:none}
+    .nav-actions{display:flex;gap:10px;flex-wrap:wrap}
+    .tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:15px}
+    .tab{background:#2a2a2a;color:#fff}
+    .tab.active{background:#ff2b2b}
+    .search-row{display:flex;gap:10px;flex-wrap:wrap}
+    table{width:100%;border-collapse:collapse;margin-top:10px;background:#fff;color:#000;border-radius:10px;overflow:hidden}
+    th,td{padding:12px;border-bottom:1px solid #ddd;text-align:left;vertical-align:middle}
+    th{background:#ff2b2b;color:#fff}
+    tr:hover{background:#f5f5f5}
+    .row-actions{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+    .small-input{width:90px;padding:8px;background:#fff;border:1px solid #333;color:#000}
+    .price-input{width:150px;padding:8px;background:#fff;border:1px solid #333;color:#000}
+    .mensaje{margin-top:10px;font-weight:bold;min-height:22px}
+    .mensaje.ok{color:#00ff88}
+    .mensaje.error{color:#ff6666}
+    .empty{text-align:center;color:#666;padding:20px 0}
+    .pdf-box{text-align:center}
+    .login-wrapper{max-width:520px;margin:60px auto;padding:20px}
+    .login-card{background:#1b1b1b;border-radius:12px;padding:25px;border:1px solid #2b2b2b;box-shadow:0 8px 20px rgba(0,0,0,.15)}
+    .login-title{text-align:center;color:#111;font-size:46px;margin-bottom:8px;font-weight:bold}
+    .login-subtitle{text-align:center;color:#555;font-size:24px;margin-bottom:25px;font-weight:bold}
+    .login-card .grid{grid-template-columns:1fr}
+    .login-error{margin-top:12px;text-align:center;font-weight:bold;color:#ff5555;min-height:20px}
+    .carrito-mini{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center;background:#fff;color:#000;padding:14px;border-radius:10px}
+    .carrito-mini strong{font-size:18px}
+    .chip{display:inline-block;background:#f4f4f4;color:#111;padding:4px 8px;border-radius:999px;font-size:12px;font-weight:bold}
+    @media (max-width: 900px){
+      h1{font-size:36px}
+      .subtitulo{font-size:22px}
+      .login-title{font-size:34px}
+      .login-subtitle{font-size:20px}
+      .top-actions{justify-content:center}
+      table,thead,tbody,th,td,tr{display:block}
+      thead{display:none}
+      tr{background:#fff;border:1px solid #ddd;border-radius:10px;padding:10px;margin-bottom:12px}
+      td{border:none;padding:8px 0}
+      td::before{content:attr(data-label);display:block;font-weight:bold;color:#111;margin-bottom:4px}
+      .row-actions{justify-content:flex-start}
+      .small-input,.price-input{width:100%}
+    }
+  </style>
+</head>
+<body>
+  <div id="loginBox" class="login-wrapper" style="display:none;">
+    <div class="login-title">B-P Sanitarios</div>
+    <div class="login-subtitle">Panel de productos</div>
+    <div class="login-card">
+      <h2>Iniciar sesión</h2>
+      <div class="grid">
+        <input type="email" id="email" placeholder="Correo electrónico" />
+        <input type="password" id="password" placeholder="Contraseña" />
+      </div>
+      <div style="margin-top:16px;text-align:center;">
+        <button class="btn-primary" onclick="login()">Ingresar</button>
+      </div>
+      <div id="loginError" class="login-error"></div>
+    </div>
+  </div>
+
+  <div id="app" style="display:none;">
+    <div class="container">
+      <h1>B-P Sanitarios</h1>
+      <div class="subtitulo">Productos</div>
+
+      <div class="top-actions">
+        <div class="nav-actions">
+ <a href="index.html"><button class="btn-secondary" type="button">Ir a Inicio</button></a>
+          <a href="remitos.html"><button class="btn-secondary" type="button">Ir a remitos</button></a>
+        </div>
+        <button class="btn-logout" onclick="cerrarSesion()">Cerrar sesión</button>
+      </div>
+
+      <div class="card">
+        <h2>Agregar producto</h2>
+        <div class="grid">
+          <input type="text" id="codigo" placeholder="Código" />
+          <select id="marca">
+            <option value="">Seleccionar marca</option>
+            <option value="Duke">Duke</option>
+            <option value="TF3">TF3</option>
+            <option value="Bonomini">Bonomini</option>
+            <option value="Dealer">Dealer</option>
+            <option value="Otros">Otros</option>
+          </select>
+          <input type="text" id="nombre" placeholder="Nombre del producto" />
+          <input type="number" id="cantidad" placeholder="Cantidad" min="0" />
+          <input type="number" id="precio" placeholder="Precio unitario" min="0" step="0.01" />
+        </div>
+        <div style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap;">
+          <button class="btn-primary" onclick="agregarProducto()">Agregar producto</button>
+          <button class="btn-secondary" onclick="limpiarFormulario()">Limpiar</button>
+        </div>
+        <div id="mensaje" class="mensaje"></div>
+      </div>
+
+      <div class="card">
+        <h2>Buscar</h2>
+        <div class="search-row">
+          <input type="text" id="busqueda" placeholder="Buscar por código o nombre" oninput="renderTabla()" />
+          <button class="btn-secondary" onclick="limpiarBusqueda()">Limpiar</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Carrito actual</h2>
+        <div class="carrito-mini">
+          <div>
+            <strong id="carritoCantidad">0 productos</strong><br>
+            <span>Total: <span id="carritoTotal">$0,00</span></span>
+          </div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            <a href="remitos.html"><button class="btn-success" type="button">Abrir remitos</button></a>
+            <button class="btn-secondary" onclick="vaciarCarrito()">Vaciar carrito</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Productos</h2>
+        <div class="tabs">
+          <button class="tab active" onclick="cambiarMarcaVista('Todas', this)">Todas</button>
+          <button class="tab" onclick="cambiarMarcaVista('Duke', this)">Duke</button>
+          <button class="tab" onclick="cambiarMarcaVista('TF3', this)">TF3</button>
+          <button class="tab" onclick="cambiarMarcaVista('Bonomini', this)">Bonomini</button>
+          <button class="tab" onclick="cambiarMarcaVista('Dealer', this)">Dealer</button>
+          <button class="tab" onclick="cambiarMarcaVista('Otros', this)">Otros</button>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Código</th>
+              <th>Marca</th>
+              <th>Nombre</th>
+              <th>Cantidad</th>
+              <th>Precio</th>
+              <th>Movimiento</th>
+              <th>Carrito</th>
+              <th>Eliminar</th>
+            </tr>
+          </thead>
+          <tbody id="tablaStock"></tbody>
+        </table>
+      </div>
+
+      <div class="card pdf-box">
+        <h2>Exportar stock</h2>
+        <button class="btn-primary" onclick="exportarPDF()">Descargar PDF</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
+    import { getDatabase, ref, push, onValue, update, remove, off } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-database.js";
+    import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCtn8b4kpU616tgH56Gw-NDH0o5zLDn48Q",
+      authDomain: "bpsanitariossrl.firebaseapp.com",
+      databaseURL: "https://bpsanitariossrl-default-rtdb.firebaseio.com",
+      projectId: "bpsanitariossrl",
+      storageBucket: "bpsanitariossrl.firebasestorage.app",
+      messagingSenderId: "761286267293",
+      appId: "1:761286267293:web:bfe8bf3e25a9fe22621f74",
+      measurementId: "G-BMJXXK58E2"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const auth = getAuth(app);
+    const productosRef = ref(db, 'stockPorMarca');
+
+    let productos = [];
+    let marcaActual = 'Todas';
+    let listenerActivo = false;
+    let carrito = [];
+
+    const marcas = ['Duke', 'TF3', 'Bonomini', 'Dealer', 'Otros'];
+
+    function moneda(valor){
+      return new Intl.NumberFormat('es-AR', { style:'currency', currency:'ARS' }).format(Number(valor || 0));
+    }
+
+    function normalizarTexto(texto){
+      return String(texto || '').trim().toLowerCase();
+    }
+
+    function mostrarMensaje(texto, tipo='ok'){
+      const el = document.getElementById('mensaje');
+      if(!el) return;
+      el.className = 'mensaje ' + tipo;
+      el.textContent = texto;
+      clearTimeout(window.__msgTimer);
+      window.__msgTimer = setTimeout(() => {
+        el.className = 'mensaje';
+        el.textContent = '';
+      }, 3000);
+    }
+
+    function mostrarErrorLogin(texto){
+      const el = document.getElementById('loginError');
+      if (el) el.textContent = texto;
+    }
+
+    function guardarCarrito(){
+      localStorage.setItem('bp_carrito', JSON.stringify(carrito));
+    }
+
+    function cargarCarrito(){
+      try{
+        carrito = JSON.parse(localStorage.getItem('bp_carrito')) || [];
+      }catch(error){
+        carrito = [];
+      }
+    }
+
+    function renderResumenCarrito(){
+      const cantidad = carrito.reduce((acc, item) => acc + Number(item.cantidad || 0), 0);
+      const total = carrito.reduce((acc, item) => acc + (Number(item.cantidad || 0) * Number(item.precio || 0)), 0);
+      document.getElementById('carritoCantidad').textContent = `${cantidad} producto${cantidad === 1 ? '' : 's'}`;
+      document.getElementById('carritoTotal').textContent = moneda(total);
+    }
+
+    function vaciarCarrito(){
+      carrito = [];
+      guardarCarrito();
+      renderResumenCarrito();
+      mostrarMensaje('Carrito vaciado.', 'ok');
+    }
+
+    function limpiarFormulario(){
+      document.getElementById('codigo').value = '';
+      document.getElementById('marca').value = '';
+      document.getElementById('nombre').value = '';
+      document.getElementById('cantidad').value = '';
+      document.getElementById('precio').value = '';
+    }
+
+    function limpiarBusqueda(){
+      document.getElementById('busqueda').value = '';
+      renderTabla();
+    }
+
+    function cambiarMarcaVista(marca, boton){
+      marcaActual = marca;
+      document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+      if(boton) boton.classList.add('active');
+      renderTabla();
+    }
+
+    function obtenerProductosFiltrados(){
+      const busqueda = normalizarTexto(document.getElementById('busqueda').value);
+      return productos.filter((item) => {
+        const coincideMarca = marcaActual === 'Todas' || item.marca === marcaActual;
+        const coincideBusqueda = !busqueda || normalizarTexto(item.codigo).includes(busqueda) || normalizarTexto(item.nombre).includes(busqueda);
+        return coincideMarca && coincideBusqueda;
+      }).sort((a, b) => {
+        const marcaComp = String(a.marca).localeCompare(String(b.marca));
+        return marcaComp !== 0 ? marcaComp : String(a.nombre).localeCompare(String(b.nombre));
+      });
+    }
+
+    function renderTabla(){
+      const tbody = document.getElementById('tablaStock');
+      const lista = obtenerProductosFiltrados();
+
+      if(!lista.length){
+        tbody.innerHTML = '<tr><td colspan="8" class="empty">No hay productos para mostrar.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = lista.map((item) => `
+        <tr>
+          <td data-label="Código">${item.codigo || '-'}</td>
+          <td data-label="Marca"><span class="chip">${item.marca || '-'}</span></td>
+          <td data-label="Nombre">${item.nombre || '-'}</td>
+          <td data-label="Cantidad">${Number(item.cantidad || 0)}</td>
+          <td data-label="Precio">${moneda(item.precio)}</td>
+          <td data-label="Movimiento">
+            <div class="row-actions">
+              <input class="small-input" type="number" min="1" id="mov-${item.id}" placeholder="Cant." />
+              <button class="btn-secondary" onclick="sumarStock('${item.id}')">+</button>
+              <button class="btn-secondary" onclick="restarStock('${item.id}')">-</button>
+              <input class="price-input" type="number" min="0" step="0.01" id="precio-${item.id}" value="${Number(item.precio || 0)}" />
+              <button class="btn-secondary" onclick="guardarPrecio('${item.id}')">Precio</button>
+            </div>
+          </td>
+          <td data-label="Carrito">
+            <div class="row-actions">
+              <input class="small-input" type="number" min="1" id="cart-${item.id}" placeholder="Cant." />
+              <button class="btn-success" onclick="agregarCarrito('${item.id}')">Agregar</button>
+            </div>
+          </td>
+          <td data-label="Eliminar">
+            <button class="btn-danger" onclick="eliminarProducto('${item.id}')">Eliminar</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    async function agregarProducto(){
+      const codigo = document.getElementById('codigo').value.trim();
+      const marca = document.getElementById('marca').value;
+      const nombre = document.getElementById('nombre').value.trim();
+      const cantidad = Number(document.getElementById('cantidad').value);
+      const precio = Number(document.getElementById('precio').value);
+
+      if(!codigo || !marca || !nombre){
+        mostrarMensaje('Completá código, marca y nombre.', 'error');
+        return;
+      }
+      if(Number.isNaN(cantidad) || cantidad < 0 || Number.isNaN(precio) || precio < 0){
+        mostrarMensaje('Indicá cantidad y precio válidos.', 'error');
+        return;
+      }
+
+      const existe = productos.some(item => normalizarTexto(item.codigo) === normalizarTexto(codigo));
+      if(existe){
+        mostrarMensaje('Ya existe un producto con ese código.', 'error');
+        return;
+      }
+
+      try{
+        await push(productosRef, { codigo, marca, nombre, cantidad, precio });
+        limpiarFormulario();
+        mostrarMensaje('Producto agregado correctamente.', 'ok');
+      }catch(error){
+        console.error(error);
+        mostrarMensaje('No se pudo agregar el producto.', 'error');
+      }
+    }
+
+    function buscarProductoPorId(id){
+      return productos.find(item => item.id === id);
+    }
+
+    async function sumarStock(id){
+      const producto = buscarProductoPorId(id);
+      const cantidad = Number(document.getElementById(`mov-${id}`).value);
+      if(!producto || !cantidad || cantidad <= 0){
+        mostrarMensaje('Indicá una cantidad válida.', 'error');
+        return;
+      }
+      try{
+        await update(ref(db, `stockPorMarca/${id}`), { cantidad: Number(producto.cantidad || 0) + cantidad });
+        document.getElementById(`mov-${id}`).value = '';
+        mostrarMensaje('Stock actualizado.', 'ok');
+      }catch(error){
+        console.error(error);
+        mostrarMensaje('No se pudo actualizar el stock.', 'error');
+      }
+    }
+
+    async function restarStock(id){
+      const producto = buscarProductoPorId(id);
+      const cantidad = Number(document.getElementById(`mov-${id}`).value);
+      if(!producto || !cantidad || cantidad <= 0){
+        mostrarMensaje('Indicá una cantidad válida.', 'error');
+        return;
+      }
+      if(Number(producto.cantidad || 0) < cantidad){
+        mostrarMensaje('No hay stock suficiente.', 'error');
+        return;
+      }
+      try{
+        await update(ref(db, `stockPorMarca/${id}`), { cantidad: Number(producto.cantidad || 0) - cantidad });
+        document.getElementById(`mov-${id}`).value = '';
+        mostrarMensaje('Stock actualizado.', 'ok');
+      }catch(error){
+        console.error(error);
+        mostrarMensaje('No se pudo actualizar el stock.', 'error');
+      }
+    }
+
+    async function guardarPrecio(id){
+      const producto = buscarProductoPorId(id);
+      const precio = Number(document.getElementById(`precio-${id}`).value);
+      if(!producto || Number.isNaN(precio) || precio < 0){
+        mostrarMensaje('Indicá un precio válido.', 'error');
+        return;
+      }
+      try{
+        await update(ref(db, `stockPorMarca/${id}`), { precio });
+        mostrarMensaje('Precio actualizado.', 'ok');
+      }catch(error){
+        console.error(error);
+        mostrarMensaje('No se pudo actualizar el precio.', 'error');
+      }
+    }
+
+    function agregarCarrito(id){
+      const producto = buscarProductoPorId(id);
+      const cantidad = Number(document.getElementById(`cart-${id}`).value);
+      if(!producto || !cantidad || cantidad <= 0){
+        mostrarMensaje('Indicá una cantidad válida.', 'error');
+        return;
+      }
+      if(Number(producto.cantidad || 0) < cantidad){
+        mostrarMensaje('La cantidad supera el stock disponible.', 'error');
+        return;
+      }
+
+      const existente = carrito.find(item => item.id === id);
+      const nuevaCantidadTotal = Number(existente?.cantidad || 0) + cantidad;
+      if(nuevaCantidadTotal > Number(producto.cantidad || 0)){
+        mostrarMensaje('La suma en carrito supera el stock disponible.', 'error');
+        return;
+      }
+
+      if(existente){
+        existente.cantidad = nuevaCantidadTotal;
+      }else{
+        carrito.push({
+          id: producto.id,
+          codigo: producto.codigo,
+          marca: producto.marca,
+          nombre: producto.nombre,
+          precio: Number(producto.precio || 0),
+          cantidad
+        });
+      }
+
+      document.getElementById(`cart-${id}`).value = '';
+      guardarCarrito();
+      renderResumenCarrito();
+      mostrarMensaje('Producto agregado al carrito.', 'ok');
+    }
+
+    async function eliminarProducto(id){
+      const producto = buscarProductoPorId(id);
+      if(!producto) return;
+      const confirmado = confirm(`¿Eliminar ${producto.nombre}?`);
+      if(!confirmado) return;
+      try{
+        await remove(ref(db, `stockPorMarca/${id}`));
+        carrito = carrito.filter(item => item.id !== id);
+        guardarCarrito();
+        renderResumenCarrito();
+        mostrarMensaje('Producto eliminado.', 'ok');
+      }catch(error){
+        console.error(error);
+        mostrarMensaje('No se pudo eliminar el producto.', 'error');
+      }
+    }
+
+    function exportarPDF(){
+      const lista = obtenerProductosFiltrados();
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      let y = 20;
+
+      doc.setFontSize(18);
+      doc.text('Stock de productos - B-P Sanitarios', 14, y);
+      y += 10;
+      doc.setFontSize(11);
+      doc.text(`Vista: ${marcaActual}`, 14, y);
+      y += 8;
+      doc.text(`Fecha: ${new Date().toLocaleString('es-AR')}`, 14, y);
+      y += 10;
+
+      lista.forEach((item, index) => {
+        if (y > 275) {
+          doc.addPage();
+          y = 20;
+        }
+        doc.text(`${index + 1}. [${item.marca}] ${item.codigo} - ${item.nombre} | Cant: ${item.cantidad} | Precio: ${moneda(item.precio)}`, 14, y);
+        y += 8;
+      });
+
+      if (!lista.length) doc.text('No hay productos para exportar.', 14, y);
+      doc.save('stock-productos.pdf');
+    }
+
+    function activarLecturaStock(){
+      if(listenerActivo) return;
+      listenerActivo = true;
+      onValue(productosRef, (snapshot) => {
+        const data = snapshot.val() || {};
+        productos = Object.entries(data).map(([id, item]) => ({ id, ...item }));
+        renderTabla();
+        renderResumenCarrito();
+      }, (error) => {
+        console.error('Error al leer stock:', error);
+      });
+    }
+
+    function desactivarLecturaStock(){
+      off(productosRef);
+      listenerActivo = false;
+      productos = [];
+      renderTabla();
+    }
+
+    async function login(){
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      mostrarErrorLogin('');
+      try{
+        await signInWithEmailAndPassword(auth, email, password);
+      }catch(error){
+        console.error(error);
+        mostrarErrorLogin('Correo o contraseña incorrectos.');
+      }
+    }
+
+    async function cerrarSesion(){
+      try{
+        await signOut(auth);
+      }catch(error){
+        console.error(error);
+      }
+    }
+
+    onAuthStateChanged(auth, (user) => {
+      const loginBox = document.getElementById('loginBox');
+      const appBox = document.getElementById('app');
+
+      if (user) {
+        loginBox.style.display = 'none';
+        appBox.style.display = 'block';
+        cargarCarrito();
+        renderResumenCarrito();
+        activarLecturaStock();
+      } else {
+        loginBox.style.display = 'block';
+        appBox.style.display = 'none';
+        desactivarLecturaStock();
+      }
+    });
+
+    window.login = login;
+    window.cerrarSesion = cerrarSesion;
+    window.agregarProducto = agregarProducto;
+    window.limpiarFormulario = limpiarFormulario;
+    window.limpiarBusqueda = limpiarBusqueda;
+    window.cambiarMarcaVista = cambiarMarcaVista;
+    window.renderTabla = renderTabla;
+    window.sumarStock = sumarStock;
+    window.restarStock = restarStock;
+    window.guardarPrecio = guardarPrecio;
+    window.agregarCarrito = agregarCarrito;
+    window.eliminarProducto = eliminarProducto;
+    window.exportarPDF = exportarPDF;
+    window.vaciarCarrito = vaciarCarrito;
+  </script>
+</body>
+</html>

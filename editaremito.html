@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Editar remito - B-P Sanitarios</title>
+  <style>
+    *{box-sizing:border-box;font-family:Arial,sans-serif}
+    body{margin:0;background:#f3f3f3;color:#fff}
+    .container{max-width:1280px;margin:30px auto;padding:20px}
+    h1{text-align:center;color:#111;font-size:44px;margin:0 0 8px;font-weight:700}
+    .subtitulo{text-align:center;color:#555;font-size:26px;margin:0 0 25px;font-weight:700}
+    .card{background:#1b1b1b;border-radius:12px;padding:18px;margin-bottom:20px;border:1px solid #2b2b2b}
+    h2,h3{margin:0 0 14px;color:#fff}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
+    .grid-2{display:grid;grid-template-columns:2fr 1fr;gap:12px}
+    input,select,textarea{width:100%;padding:10px;border-radius:6px;border:1px solid #333;background:#fff;color:#000}
+    input:focus,select:focus,textarea:focus{border-color:#ff2b2b;outline:none}
+    button{border:none;border-radius:6px;padding:10px 14px;cursor:pointer;font-weight:bold}
+    .btn-primary{background:#ff2b2b;color:#fff}
+    .btn-success{background:#28a745;color:#fff}
+    .btn-danger{background:#c82333;color:#fff}
+    .btn-secondary{background:#444;color:#fff}
+    .btn-warning{background:#d39e00;color:#111}
+    .btn-logout{background:#444;color:#fff}
+    .top-actions{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:15px}
+    .nav-actions{display:flex;gap:10px;flex-wrap:wrap}
+    .nav-actions a{text-decoration:none}
+    table{width:100%;border-collapse:collapse;margin-top:10px;background:#fff;color:#000;border-radius:10px;overflow:hidden}
+    th,td{padding:12px;border-bottom:1px solid #ddd;text-align:left;vertical-align:middle}
+    th{background:#ff2b2b;color:#fff}
+    tr:hover{background:#f5f5f5}
+    .mensaje{margin-top:10px;font-weight:bold;min-height:22px}
+    .mensaje.ok{color:#00ff88}.mensaje.error{color:#ff6666}
+    .muted{color:#666}
+    .login-wrapper{max-width:520px;margin:60px auto;padding:20px}
+    .login-card{background:#1b1b1b;border-radius:12px;padding:25px;border:1px solid #2b2b2b;box-shadow:0 8px 20px rgba(0,0,0,.15)}
+    .login-title{text-align:center;color:#111;font-size:46px;margin-bottom:8px;font-weight:bold}
+    .login-subtitle{text-align:center;color:#555;font-size:24px;margin-bottom:25px;font-weight:bold}
+    .login-card .grid{grid-template-columns:1fr}
+    .login-error{margin-top:12px;text-align:center;font-weight:bold;color:#ff5555;min-height:20px}
+    .toolbar{display:grid;grid-template-columns:minmax(180px,240px) repeat(2,auto);gap:12px;align-items:end}
+    .preview-box{background:#fff;color:#000;border-radius:10px;padding:14px;border:1px solid #ddd}
+    .meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px 14px;margin-bottom:10px}
+    .estado-activo{color:#008f4c;font-weight:bold}.estado-anulado{color:#d60000;font-weight:bold}
+    .small-input{width:100%;min-width:84px;padding:8px;background:#fff;border:1px solid #333;color:#000}
+    .row-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+    .item-total{font-weight:bold}
+    .totales{margin-top:12px;text-align:right;font-weight:bold;color:#fff;font-size:18px}
+    .empty{padding:16px;text-align:center;color:#666;background:#fff;border-radius:10px;border:1px solid #ddd}
+    .info{font-size:13px;color:#bdbdbd;margin-top:4px}
+    .separator{height:1px;background:#333;margin:18px 0}
+    @media (max-width: 900px){
+      h1{font-size:34px}
+      .subtitulo{font-size:22px}
+      .login-title{font-size:34px}
+      .login-subtitle{font-size:20px}
+      .toolbar,.grid-2{grid-template-columns:1fr}
+      table,thead,tbody,th,td,tr{display:block}
+      thead{display:none}
+      tr{background:#fff;border:1px solid #ddd;border-radius:10px;padding:10px;margin-bottom:12px}
+      td{border:none;padding:8px 0}
+      td::before{content:attr(data-label);display:block;font-weight:bold;color:#111;margin-bottom:4px}
+    }
+  </style>
+</head>
+<body>
+  <div id="loginBox" class="login-wrapper" style="display:none;">
+    <div class="login-title">B-P Sanitarios</div>
+    <div class="login-subtitle">Editar remito</div>
+    <div class="login-card">
+      <h2>Iniciar sesión</h2>
+      <div class="grid">
+        <input type="email" id="email" placeholder="Correo electrónico" />
+        <input type="password" id="password" placeholder="Contraseña" />
+      </div>
+      <div style="margin-top:16px;text-align:center;">
+        <button class="btn-primary" onclick="login()">Ingresar</button>
+      </div>
+      <div id="loginError" class="login-error"></div>
+    </div>
+  </div>
+
+  <div id="app" style="display:none;">
+    <div class="container">
+      <h1>B-P Sanitarios</h1>
+      <div class="subtitulo">Editar remito</div>
+
+      <div class="top-actions">
+        <div class="nav-actions">
+          <a href="remitos.html"><button class="btn-secondary" type="button">Volver a remitos</button></a>
+          <a href="productos.html"><button class="btn-secondary" type="button">Ir a productos</button></a>
+        </div>
+        <button class="btn-logout" onclick="cerrarSesion()">Cerrar sesión</button>
+      </div>
+
+      <div class="card">
+        <h2>Buscar remito a editar</h2>
+        <div class="toolbar">
+          <div>
+            <input type="number" id="buscarNumero" min="1" placeholder="Número de remito" />
+            <div class="info">También podés entrar con editar-remito.html?numero=123</div>
+          </div>
+          <button class="btn-secondary" onclick="buscarRemito()">Cargar remito</button>
+          <button class="btn-warning" onclick="imprimirActual()">Imprimir actual</button>
+        </div>
+        <div id="mensaje" class="mensaje"></div>
+      </div>
+
+      <div id="editorBox" style="display:none;">
+        <div class="card">
+          <h2>Datos del remito</h2>
+          <div class="meta" id="metaRemito"></div>
+          <div class="grid">
+            <input type="text" id="clienteNombre" placeholder="Nombre o razón social" />
+            <input type="text" id="clienteDireccion" placeholder="Dirección" />
+            <input type="text" id="clienteCuit" placeholder="CUIT" />
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>Productos del remito</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Código</th>
+                <th>Descripción</th>
+                <th>Cantidad</th>
+                <th>Unitario</th>
+                <th>Total</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="tablaItemsEditables"></tbody>
+          </table>
+          <div id="sinItems" class="empty" style="display:none;">Este remito no tiene productos cargados.</div>
+          <div class="totales">Total general: <span id="totalGeneral">$0,00</span></div>
+        </div>
+
+        <div class="card">
+          <h2>Agregar producto nuevo</h2>
+          <div class="grid-2">
+            <div>
+              <select id="productoAgregar"></select>
+              <div class="info" id="infoProductoAgregar">Elegí un producto para agregarlo al remito.</div>
+            </div>
+            <div class="grid">
+              <input type="number" id="nuevaCantidad" min="1" value="1" placeholder="Cantidad" />
+              <input type="number" id="nuevoPrecio" min="0" step="0.01" placeholder="Precio unitario" />
+            </div>
+          </div>
+          <div class="separator"></div>
+          <div class="row-actions">
+            <button class="btn-success" onclick="agregarProductoNuevo()">Agregar producto</button>
+            <button class="btn-primary" onclick="guardarCambiosRemito()">Guardar cambios e imprimir</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
+    import { getDatabase, ref, get, onValue, off, update } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-database.js";
+    import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCtn8b4kpU616tgH56Gw-NDH0o5zLDn48Q",
+      authDomain: "bpsanitariossrl.firebaseapp.com",
+      databaseURL: "https://bpsanitariossrl-default-rtdb.firebaseio.com",
+      projectId: "bpsanitariossrl",
+      storageBucket: "bpsanitariossrl.firebasestorage.app",
+      messagingSenderId: "761286267293",
+      appId: "1:761286267293:web:bfe8bf3e25a9fe22621f74",
+      measurementId: "G-BMJXXK58E2"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const auth = getAuth(app);
+    const productosRef = ref(db, 'stockPorMarca');
+
+    let productos = [];
+    let remitoOriginal = null;
+    let remitoEditando = null;
+    let listenerProductosActivo = false;
+
+    function moneda(valor){
+      return new Intl.NumberFormat('es-AR', { style:'currency', currency:'ARS' }).format(Number(valor || 0));
+    }
+
+    function mostrarMensaje(texto, tipo='ok'){
+      const el = document.getElementById('mensaje');
+      if(!el) return;
+      el.className = 'mensaje ' + tipo;
+      el.textContent = texto;
+      clearTimeout(window.__msgTimer);
+      window.__msgTimer = setTimeout(() => {
+        el.className = 'mensaje';
+        el.textContent = '';
+      }, 4500);
+    }
+
+    function mostrarErrorLogin(texto){
+      const el = document.getElementById('loginError');
+      if(el) el.textContent = texto;
+    }
+
+    function formatearFecha(fechaIso){
+      if(!fechaIso) return '-';
+      const fecha = new Date(fechaIso);
+      return Number.isNaN(fecha.getTime()) ? fechaIso : fecha.toLocaleString('es-AR');
+    }
+
+    function formatearNumeroRemito(numero){
+      return String(Number(numero || 0)).padStart(6, '0');
+    }
+
+    function deepClone(data){
+      return JSON.parse(JSON.stringify(data));
+    }
+
+    function obtenerNumeroDesdeUrl(){
+      const params = new URLSearchParams(window.location.search);
+      return Number(params.get('numero') || 0);
+    }
+
+    function actualizarUrl(numero){
+      const url = new URL(window.location.href);
+      url.searchParams.set('numero', String(numero));
+      window.history.replaceState({}, '', url);
+    }
+
+    function activarLecturaProductos(){
+      if(listenerProductosActivo) return;
+      listenerProductosActivo = true;
+      onValue(productosRef, (snapshot) => {
+        const data = snapshot.val() || {};
+        productos = Object.entries(data).map(([id, item]) => ({ id, ...item }))
+          .sort((a,b) => String(a.nombre || '').localeCompare(String(b.nombre || ''), 'es'));
+        renderSelectProductos();
+        renderInfoProductoSeleccionado();
+      });
+    }
+
+    function desactivarLecturas(){
+      off(productosRef);
+      listenerProductosActivo = false;
+      productos = [];
+    }
+
+    function renderSelectProductos(){
+      const select = document.getElementById('productoAgregar');
+      if(!select) return;
+      const actual = select.value;
+      const options = ['<option value="">Seleccionar producto...</option>']
+        .concat(productos.map(item => {
+          const stock = Number(item.cantidad || 0);
+          const texto = `${item.nombre || 'Sin nombre'} · ${item.codigo || 'Sin código'} · Stock: ${stock}`;
+          return `<option value="${item.id}">${texto}</option>`;
+        }));
+      select.innerHTML = options.join('');
+      if(productos.some(p => p.id === actual)) select.value = actual;
+    }
+
+    function renderInfoProductoSeleccionado(){
+      const select = document.getElementById('productoAgregar');
+      const info = document.getElementById('infoProductoAgregar');
+      const precioInput = document.getElementById('nuevoPrecio');
+      if(!select || !info || !precioInput) return;
+      const producto = productos.find(p => p.id === select.value);
+      if(!producto){
+        info.textContent = 'Elegí un producto para agregarlo al remito.';
+        return;
+      }
+      info.textContent = `Código: ${producto.codigo || '-'} · Marca: ${producto.marca || '-'} · Stock actual: ${Number(producto.cantidad || 0)}`;
+      if(!precioInput.value) precioInput.value = Number(producto.precio || 0) || '';
+    }
+
+    function setEditorVisible(visible){
+      document.getElementById('editorBox').style.display = visible ? 'block' : 'none';
+    }
+
+    function renderMetaRemito(){
+      const box = document.getElementById('metaRemito');
+      if(!remitoEditando){
+        box.innerHTML = '';
+        return;
+      }
+      box.innerHTML = `
+        <div><strong>Número:</strong> ${formatearNumeroRemito(remitoEditando.numero)}</div>
+        <div><strong>Fecha original:</strong> ${formatearFecha(remitoEditando.fechaIso)}</div>
+        <div><strong>Estado:</strong> <span class="${remitoEditando.estado === 'anulado' ? 'estado-anulado' : 'estado-activo'}">${remitoEditando.estado || 'activo'}</span></div>
+        <div><strong>Última edición:</strong> ${remitoEditando.fechaEdicionIso ? formatearFecha(remitoEditando.fechaEdicionIso) : 'Todavía no editado'}</div>
+      `;
+    }
+
+    function calcularTotalRemito(items){
+      return (items || []).reduce((acc, item) => acc + Number(item.cantidad || 0) * Number(item.precio || 0), 0);
+    }
+
+    function renderItems(){
+      const tbody = document.getElementById('tablaItemsEditables');
+      const sinItems = document.getElementById('sinItems');
+      const totalEl = document.getElementById('totalGeneral');
+      const items = remitoEditando?.items || [];
+
+      if(!items.length){
+        tbody.innerHTML = '';
+        sinItems.style.display = 'block';
+        totalEl.textContent = moneda(0);
+        return;
+      }
+
+      sinItems.style.display = 'none';
+      tbody.innerHTML = items.map((item, index) => {
+        const total = Number(item.cantidad || 0) * Number(item.precio || 0);
+        return `
+          <tr>
+            <td data-label="Código">${item.codigo || '-'}</td>
+            <td data-label="Descripción">${item.nombre || '-'}</td>
+            <td data-label="Cantidad"><input class="small-input" id="item-cantidad-${index}" type="number" min="1" step="1" value="${Number(item.cantidad || 1)}" /></td>
+            <td data-label="Unitario"><input class="small-input" id="item-precio-${index}" type="number" min="0" step="0.01" value="${Number(item.precio || 0)}" /></td>
+            <td data-label="Total" class="item-total">${moneda(total)}</td>
+            <td data-label="Acciones"><button class="btn-danger" onclick="eliminarItem(${index})">Eliminar</button></td>
+          </tr>
+        `;
+      }).join('');
+
+      totalEl.textContent = moneda(calcularTotalRemito(items));
+    }
+
+    function cargarFormularioRemito(){
+      if(!remitoEditando) return;
+      document.getElementById('clienteNombre').value = remitoEditando.clienteNombre || '';
+      document.getElementById('clienteDireccion').value = remitoEditando.clienteDireccion || '';
+      document.getElementById('clienteCuit').value = remitoEditando.clienteCuit || '';
+      renderMetaRemito();
+      renderItems();
+      setEditorVisible(true);
+    }
+
+    async function buscarRemito(){
+      const numero = Number(document.getElementById('buscarNumero').value);
+      if(!numero){
+        mostrarMensaje('Indicá un número de remito.', 'error');
+        return;
+      }
+      try{
+        const snapshot = await get(ref(db, `remitos/${numero}`));
+        if(!snapshot.exists()){
+          setEditorVisible(false);
+          remitoOriginal = null;
+          remitoEditando = null;
+          mostrarMensaje('No se encontró ese remito.', 'error');
+          return;
+        }
+        const remito = snapshot.val();
+        if(remito.estado === 'anulado'){
+          setEditorVisible(false);
+          remitoOriginal = remito;
+          remitoEditando = deepClone(remito);
+          mostrarMensaje('Ese remito está anulado y no se puede editar.', 'error');
+          return;
+        }
+        remitoOriginal = deepClone(remito);
+        remitoEditando = deepClone(remito);
+        actualizarUrl(numero);
+        cargarFormularioRemito();
+        mostrarMensaje(`Remito ${formatearNumeroRemito(numero)} cargado para editar.`, 'ok');
+      }catch(error){
+        console.error(error);
+        mostrarMensaje('No se pudo cargar el remito.', 'error');
+      }
+    }
+
+    function sincronizarDesdeInputs(){
+      if(!remitoEditando) return;
+      remitoEditando.clienteNombre = document.getElementById('clienteNombre').value.trim();
+      remitoEditando.clienteDireccion = document.getElementById('clienteDireccion').value.trim();
+      remitoEditando.clienteCuit = document.getElementById('clienteCuit').value.trim();
+
+      remitoEditando.items = (remitoEditando.items || []).map((item, index) => ({
+        ...item,
+        cantidad: Number(document.getElementById(`item-cantidad-${index}`)?.value || item.cantidad || 1),
+        precio: Number(document.getElementById(`item-precio-${index}`)?.value || item.precio || 0)
+      }));
+    }
+
+    function eliminarItem(index){
+      if(!remitoEditando) return;
+      sincronizarDesdeInputs();
+      remitoEditando.items.splice(index, 1);
+      renderItems();
+      mostrarMensaje('Producto eliminado del remito.', 'ok');
+    }
+
+    function agregarProductoNuevo(){
+      if(!remitoEditando){
+        mostrarMensaje('Primero cargá un remito.', 'error');
+        return;
+      }
+      sincronizarDesdeInputs();
+      const productoId = document.getElementById('productoAgregar').value;
+      const cantidad = Number(document.getElementById('nuevaCantidad').value);
+      const precio = Number(document.getElementById('nuevoPrecio').value);
+      const producto = productos.find(item => item.id === productoId);
+
+      if(!producto){
+        mostrarMensaje('Seleccioná un producto.', 'error');
+        return;
+      }
+      if(!cantidad || cantidad <= 0){
+        mostrarMensaje('Indicá una cantidad válida.', 'error');
+        return;
+      }
+      if(precio < 0 || Number.isNaN(precio)){
+        mostrarMensaje('Indicá un precio válido.', 'error');
+        return;
+      }
+
+      const existente = remitoEditando.items.find(item => item.id === producto.id);
+      if(existente){
+        existente.cantidad = Number(existente.cantidad || 0) + cantidad;
+        existente.precio = precio;
+      }else{
+        remitoEditando.items.push({
+          id: producto.id,
+          marca: producto.marca || '',
+          codigo: producto.codigo || '',
+          nombre: producto.nombre || '',
+          cantidad,
+          precio
+        });
+      }
+
+      document.getElementById('nuevaCantidad').value = 1;
+      document.getElementById('nuevoPrecio').value = '';
+      document.getElementById('productoAgregar').value = '';
+      renderInfoProductoSeleccionado();
+      renderItems();
+      mostrarMensaje('Producto agregado al remito.', 'ok');
+    }
+
+    function validarRemitoEditado(){
+      sincronizarDesdeInputs();
+      if(!remitoEditando.clienteNombre){
+        throw new Error('Completá al menos el nombre del cliente.');
+      }
+      if(!remitoEditando.items.length){
+        throw new Error('El remito debe tener al menos un producto.');
+      }
+
+      const ids = new Set();
+      remitoEditando.items.forEach((item) => {
+        if(!item.id) throw new Error(`Uno de los productos no tiene ID.`);
+        if(ids.has(item.id)) throw new Error(`El producto ${item.nombre || item.codigo || item.id} quedó repetido. Revisalo antes de guardar.`);
+        ids.add(item.id);
+        if(!Number(item.cantidad) || Number(item.cantidad) <= 0){
+          throw new Error(`La cantidad de ${item.nombre || item.codigo || item.id} no es válida.`);
+        }
+        if(Number(item.precio) < 0 || Number.isNaN(Number(item.precio))){
+          throw new Error(`El precio de ${item.nombre || item.codigo || item.id} no es válido.`);
+        }
+      });
+    }
+
+    async function ajustarStockPorDiferencia(){
+      const originalMap = new Map((remitoOriginal.items || []).map(item => [item.id, Number(item.cantidad || 0)]));
+      const editadoMap = new Map((remitoEditando.items || []).map(item => [item.id, Number(item.cantidad || 0)]));
+      const ids = new Set([...originalMap.keys(), ...editadoMap.keys()]);
+
+      for(const id of ids){
+        const originalCantidad = originalMap.get(id) || 0;
+        const nuevaCantidad = editadoMap.get(id) || 0;
+        const diferencia = nuevaCantidad - originalCantidad;
+        if(diferencia === 0) continue;
+
+        const producto = productos.find(p => p.id === id);
+        if(!producto) throw new Error(`No se encontró el producto con ID ${id} para actualizar stock.`);
+        const stockActual = Number(producto.cantidad || 0);
+        const nuevoStock = stockActual - diferencia;
+        if(nuevoStock < 0){
+          throw new Error(`No alcanza el stock para ${producto.nombre || producto.codigo || id}. Disponible: ${stockActual}. Necesitás: ${diferencia}.`);
+        }
+      }
+
+      for(const id of ids){
+        const originalCantidad = originalMap.get(id) || 0;
+        const nuevaCantidad = editadoMap.get(id) || 0;
+        const diferencia = nuevaCantidad - originalCantidad;
+        if(diferencia === 0) continue;
+
+        const producto = productos.find(p => p.id === id);
+        const stockActual = Number(producto.cantidad || 0);
+        const nuevoStock = stockActual - diferencia;
+        await update(ref(db, `stockPorMarca/${id}`), { cantidad: nuevoStock });
+        producto.cantidad = nuevoStock;
+      }
+    }
+
+    function generarPdfRemito(remito){
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      let y = 18;
+
+      doc.setFontSize(18);
+      doc.text('B-P Sanitarios', 14, y);
+      y += 8;
+      doc.setFontSize(12);
+      doc.text(`Remito N° ${formatearNumeroRemito(remito.numero)}`, 14, y);
+      y += 7;
+      doc.text(`Fecha: ${formatearFecha(remito.fechaIso)}`, 14, y);
+      y += 7;
+      if(remito.fechaEdicionIso){
+        doc.text(`Editado: ${formatearFecha(remito.fechaEdicionIso)}`, 14, y);
+        y += 7;
+      }
+      doc.text(`Cliente: ${remito.clienteNombre || '-'}`, 14, y);
+      y += 7;
+      doc.text(`Dirección: ${remito.clienteDireccion || '-'}`, 14, y);
+      y += 7;
+      doc.text(`CUIT: ${remito.clienteCuit || '-'}`, 14, y);
+      y += 12;
+
+      doc.setFontSize(11);
+      doc.text('Cant.', 14, y);
+      doc.text('Código', 34, y);
+      doc.text('Descripción', 68, y);
+      doc.text('P. Unit.', 148, y, { align: 'right' });
+      doc.text('Total', 196, y, { align: 'right' });
+      y += 4;
+      doc.line(14, y, 196, y);
+      y += 8;
+
+      let totalGeneral = 0;
+      (remito.items || []).forEach((item) => {
+        const total = Number(item.cantidad || 0) * Number(item.precio || 0);
+        totalGeneral += total;
+        if(y > 270){
+          doc.addPage();
+          y = 20;
+        }
+        doc.text(String(item.cantidad || 0), 14, y);
+        doc.text(String(item.codigo || '-'), 34, y);
+        doc.text(String(item.nombre || '-').slice(0, 52), 68, y);
+        doc.text(moneda(item.precio), 148, y, { align: 'right' });
+        doc.text(moneda(total), 196, y, { align: 'right' });
+        y += 8;
+      });
+
+      y += 4;
+      doc.line(14, y, 196, y);
+      y += 10;
+      doc.setFontSize(13);
+      doc.text(`Total general: ${moneda(totalGeneral)}`, 196, y, { align: 'right' });
+      doc.save(`remito-${formatearNumeroRemito(remito.numero)}.pdf`);
+    }
+
+    async function guardarCambiosRemito(){
+      if(!remitoOriginal || !remitoEditando){
+        mostrarMensaje('Primero cargá un remito.', 'error');
+        return;
+      }
+      try{
+        validarRemitoEditado();
+        await ajustarStockPorDiferencia();
+        remitoEditando.fechaEdicionIso = new Date().toISOString();
+        await update(ref(db, `remitos/${remitoEditando.numero}`), {
+          clienteNombre: remitoEditando.clienteNombre,
+          clienteDireccion: remitoEditando.clienteDireccion,
+          clienteCuit: remitoEditando.clienteCuit,
+          items: remitoEditando.items,
+          fechaEdicionIso: remitoEditando.fechaEdicionIso,
+          totalEditado: calcularTotalRemito(remitoEditando.items)
+        });
+        remitoOriginal = deepClone(remitoEditando);
+        renderMetaRemito();
+        renderItems();
+        generarPdfRemito(remitoEditando);
+        mostrarMensaje(`Remito ${formatearNumeroRemito(remitoEditando.numero)} actualizado e impreso.`, 'ok');
+      }catch(error){
+        console.error(error);
+        mostrarMensaje(error.message || 'No se pudo guardar el remito.', 'error');
+      }
+    }
+
+    function imprimirActual(){
+      if(!remitoEditando){
+        mostrarMensaje('Primero cargá un remito.', 'error');
+        return;
+      }
+      try{
+        sincronizarDesdeInputs();
+        generarPdfRemito(remitoEditando);
+        mostrarMensaje('PDF generado.', 'ok');
+      }catch(error){
+        console.error(error);
+        mostrarMensaje('No se pudo imprimir el remito.', 'error');
+      }
+    }
+
+    async function login(){
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      mostrarErrorLogin('');
+      try{
+        await signInWithEmailAndPassword(auth, email, password);
+      }catch(error){
+        console.error(error);
+        mostrarErrorLogin('Correo o contraseña incorrectos.');
+      }
+    }
+
+    async function cerrarSesion(){
+      try{
+        await signOut(auth);
+      }catch(error){
+        console.error(error);
+      }
+    }
+
+    onAuthStateChanged(auth, async (user) => {
+      const loginBox = document.getElementById('loginBox');
+      const appBox = document.getElementById('app');
+      if(user){
+        loginBox.style.display = 'none';
+        appBox.style.display = 'block';
+        activarLecturaProductos();
+        const numeroUrl = obtenerNumeroDesdeUrl();
+        if(numeroUrl){
+          document.getElementById('buscarNumero').value = numeroUrl;
+          await buscarRemito();
+        }
+      }else{
+        loginBox.style.display = 'block';
+        appBox.style.display = 'none';
+        setEditorVisible(false);
+        desactivarLecturas();
+      }
+    });
+
+    document.getElementById('productoAgregar').addEventListener('change', renderInfoProductoSeleccionado);
+
+    window.login = login;
+    window.cerrarSesion = cerrarSesion;
+    window.buscarRemito = buscarRemito;
+    window.eliminarItem = eliminarItem;
+    window.agregarProductoNuevo = agregarProductoNuevo;
+    window.guardarCambiosRemito = guardarCambiosRemito;
+    window.imprimirActual = imprimirActual;
+  </script>
+</body>
+</html>
