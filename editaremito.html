@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Editar Remito - B-P Sanitarios</title>
+  <link rel="stylesheet" href="Style.css">
+  <link rel="stylesheet" href="StyleProductos.css">
+  <style>
+    body { background: white; color: black; }
+    .container { max-width: 1200px; margin: 30px auto; padding: 20px; }
+    h1 { color: black; text-align: center; font-size: 40px; margin-bottom: 5px; }
+    .subtitulo { color: #888; text-align: center; margin-bottom: 30px; font-weight: 400; }
+      .minititulo{color: white;}
+    
+    .card-edit { background: #1b1b1b; padding: 25px; border-radius: 12px; border: 1px solid #2b2b2b; margin-bottom: 25px; }
+    .card-edit h3 { color: #fff; margin-top: 0; margin-bottom: 20px; border-bottom: 2px solid #ff2b2b; display: inline-block; padding-bottom: 5px; }
+
+    .table-container { overflow-x: auto; border-radius: 10px; border: 1px solid #333; }
+    table { width: 100%; border-collapse: collapse; background: #222; color: #eee; }
+    th { background: #ff2b2b; color: white; padding: 12px; text-align: center; text-transform: uppercase; font-size: 13px; }
+    td { padding: 12px; border-bottom: 1px solid #333; text-align: center; }
+
+    input { background: #222 !important; color: #fff !important; border: 1px solid #444 !important; }
+    .total-display { text-align: right; font-size: 24px; margin-top: 15px; color: #ff2b2b; font-weight: bold; }
+    
+    .btn-save { background: #28a745; color: white; padding: 15px; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 20px; }
+    .btn-remove { background: #dc3545; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; }
+    
+    .search-box { display: grid; grid-template-columns: 1fr 100px 120px 100px; gap: 10px; align-items: flex-end; background: #222; padding: 15px; border-radius: 8px; border: 1px dashed #444; position: relative; }
+    #sugerencias { position: absolute; top: 100%; left: 15px; width: calc(100% - 330px); background: #333; border: 1px solid #444; z-index: 1000; max-height: 200px; overflow-y: auto; }
+    .sug-item { padding: 10px; cursor: pointer; border-bottom: 1px solid #444; }
+    .sug-item:hover { background: #444; }
+  </style>
+</head>
+<body>
+
+  <nav class="nav-custom">
+    <div class="nav-links">
+      <a href="index.html">INICIO</a>
+      <a href="productos.html">PRODUCTOS</a>
+      <a href="remitos.html">REMITOS</a>
+    </div>
+    <button class="btn-logout" id="btnLogout">Cerrar Sesión</button>
+  </nav>
+
+  <div class="container">
+    <h1>B-P Sanitarios</h1>
+    <div class="subtitulo">Edición de Remito N° <span id="nroTitulo">--</span></div>
+
+    <div id="editorRemito">
+        <div class="card-edit">
+            <h3>Datos del Comprobante</h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div><label class="minititulo">Cliente</label><input type="text" id="editCliente"></div>
+                <div><label class="minititulo">Dirección</label><input type="text" id="editDireccion"></div>
+            </div>
+        </div>
+
+        <div class="card-edit">
+            <h3>Agregar Producto</h3>
+            <div class="search-box">
+                <div>
+                    <label class="minititulo">Buscar por Código o Nombre</label>
+                    <input type="text" id="buscarProdInput" placeholder="Escriba para buscar..." oninput="sugerirProductos()">
+                    <div id="sugerencias"></div>
+                </div>
+                <div><label class="minititulo">Cantidad</label><input type="number" id="newCant" value="1" min="1"></div>
+                <div><label class="minititulo">Precio</label><input type="number" id="newPrecio"></div>
+                <button class="btn-success" id="btnAdd">AGREGAR</button>
+            </div>
+        </div>
+
+        <div class="card-edit">
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr><th>Cod.</th><th>Producto</th><th>Cant.</th><th>Precio</th><th>Subtotal</th><th></th></tr>
+                    </thead>
+                    <tbody id="tablaItems"></tbody>
+                </table>
+            </div>
+            <div class="total-display">TOTAL: <span id="totalTxt">$0.00</span></div>
+        </div>
+
+        <button class="btn-save" id="btnFinalizar">GUARDAR CAMBIOS E IMPRIMIR PDF</button>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getDatabase, ref, get, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCtn8b4kpU616tgH56Gw-NDH0o5zLDn48Q",
+      authDomain: "bpsanitariossrl.firebaseapp.com",
+      databaseURL: "https://bpsanitariossrl-default-rtdb.firebaseio.com",
+      projectId: "bpsanitariossrl",
+      storageBucket: "bpsanitariossrl.firebasestorage.app"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const auth = getAuth(app);
+
+    let remitoIdFirebase = ""; // El ID (ej: "5")
+    let remitoOriginal = null;
+    let items = [];
+    let productosMaster = [];
+    let seleccionado = null;
+
+    onAuthStateChanged(auth, async user => {
+        if(!user) window.location.href="index.html";
+        await cargarProductos();
+        
+        const nroUrl = new URLSearchParams(window.location.search).get('numero');
+        if(nroUrl) traerRemito(nroUrl);
+    });
+
+    async function cargarProductos() {
+        const snap = await get(ref(db, 'stockPorMarca'));
+        productosMaster = Object.entries(snap.val()||{}).map(([id, v]) => ({ id, ...v }));
+    }
+
+    async function traerRemito(nro) {
+        remitoIdFirebase = nro;
+        const snap = await get(ref(db, `remitos/${nro}`));
+        if(snap.exists()){
+            remitoOriginal = snap.val();
+            items = JSON.parse(JSON.stringify(remitoOriginal.items)); // Copia profunda
+            document.getElementById('editCliente').value = remitoOriginal.cliente || "";
+            document.getElementById('editDireccion').value = remitoOriginal.direccion || "";
+            document.getElementById('nroTitulo').textContent = nro;
+            render();
+        }
+    }
+
+    window.sugerirProductos = () => {
+        const val = document.getElementById('buscarProdInput').value.toLowerCase();
+        const div = document.getElementById('sugerencias');
+        if(val.length < 2) { div.innerHTML = ""; return; }
+        const filtro = productosMaster.filter(p => p.codigo.toLowerCase().includes(val) || p.nombre.toLowerCase().includes(val)).slice(0,5);
+        div.innerHTML = filtro.map(p => `
+            <div class="sug-item" onclick="seleccionarProd('${p.id}')">
+                ${p.codigo} - ${p.nombre} <b style="color:${p.cantidad <= 0 ? 'red':'#28a745'}">(Stock: ${p.cantidad})</b>
+            </div>
+        `).join('');
+    };
+
+    window.seleccionarProd = (id) => {
+        seleccionado = productosMaster.find(p => p.id === id);
+        document.getElementById('buscarProdInput').value = seleccionado.codigo;
+        document.getElementById('newPrecio').value = seleccionado.precio;
+        document.getElementById('sugerencias').innerHTML = "";
+    };
+
+    document.getElementById('btnAdd').onclick = () => {
+        if(!seleccionado) return alert("Seleccione un producto");
+        const cant = Number(document.getElementById('newCant').value);
+        
+        // Verificación de stock antes de agregar a la lista
+        if(cant > seleccionado.cantidad) {
+            alert(`⚠️ ADVERTENCIA: Stock insuficiente. Solo hay ${seleccionado.cantidad} unidades disponibles.`);
+            return;
+        }
+        
+        items.push({ 
+            id: seleccionado.id, 
+            codigo: seleccionado.codigo, 
+            nombre: seleccionado.nombre, 
+            cantidad: cant, 
+            precio: Number(document.getElementById('newPrecio').value) 
+        });
+        render();
+        document.getElementById('buscarProdInput').value = ""; seleccionado = null;
+    };
+
+    function render() {
+        const tbody = document.getElementById('tablaItems');
+        let total = 0;
+        tbody.innerHTML = items.map((it, idx) => {
+            const sub = it.cantidad * it.precio;
+            total += sub;
+            return `<tr>
+                <td>${it.codigo}</td><td>${it.nombre}</td>
+                <td><input type="number" value="${it.cantidad}" onchange="cambiarCant(${idx}, this.value)" style="width:60px;"></td>
+                <td><input type="number" value="${it.precio}" onchange="cambiarPrecio(${idx}, this.value)" style="width:80px;"></td>
+                <td>$${sub.toLocaleString()}</td>
+                <td><button class="btn-remove" onclick="eliminar(${idx})">X</button></td>
+            </tr>`;
+        }).join('');
+        document.getElementById('totalTxt').textContent = `$${total.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    }
+
+    window.cambiarCant = (i, v) => { items[i].cantidad = Number(v); render(); };
+    window.cambiarPrecio = (i, v) => { items[i].precio = Number(v); render(); };
+    window.eliminar = (i) => { items.splice(i, 1); render(); };
+
+    document.getElementById('btnFinalizar').onclick = async () => {
+        try {
+            // RE-CARGAR PRODUCTOS PARA VER STOCK REAL ACTUALIZADO
+            await cargarProductos();
+
+            // VALIDACIÓN FINAL ANTES DE GUARDAR
+            for(const it of items) {
+                const p = productosMaster.find(x => x.id === it.id);
+                // Calculamos el stock virtual: (Stock en DB + Cantidad que tenía el remito antes)
+                const itemOriginal = remitoOriginal.items.find(orig => orig.id === it.id);
+                const cantOriginalEnRemito = itemOriginal ? itemOriginal.cantidad : 0;
+                
+                const stockDisponibleReal = p.cantidad + cantOriginalEnRemito;
+
+                if(it.cantidad > stockDisponibleReal) {
+                    alert(`❌ ERROR DE STOCK: El producto "${it.nombre}" no puede tener cantidad ${it.cantidad}. El máximo disponible (incluyendo lo que ya estaba en el remito) es ${stockDisponibleReal}.`);
+                    return; // Detiene todo el proceso
+                }
+            }
+
+            // 1. Revertir stock viejo
+            for(const it of remitoOriginal.items) {
+                const p = productosMaster.find(x => x.id === it.id);
+                if(p) await update(ref(db, `stockPorMarca/${it.id}`), { cantidad: p.cantidad + it.cantidad });
+            }
+            // 2. Aplicar stock nuevo
+            for(const it of items) {
+                const p = productosMaster.find(x => x.id === it.id);
+                if(p) {
+                    // Volvemos a obtener el stock porque se actualizó arriba
+                    const pRef = ref(db, `stockPorMarca/${it.id}`);
+                    const pSnap = await get(pRef);
+                    await update(pRef, { cantidad: pSnap.val().cantidad - it.cantidad });
+                }
+            }
+
+            const total = items.reduce((acc, i) => acc + (i.precio * i.cantidad), 0);
+            const cliente = document.getElementById('editCliente').value;
+            const direccion = document.getElementById('editDireccion').value;
+            
+            await update(ref(db, `remitos/${remitoIdFirebase}`), { 
+                cliente, direccion, items, total, fechaEditado: Date.now() 
+            });
+            
+            imprimir(remitoIdFirebase, cliente, direccion, items, total);
+            alert("✅ Remito actualizado y stock sincronizado correctamente.");
+            window.location.href = "remitos.html";
+        } catch(e) { alert("Error al guardar: " + e.message); }
+    };
+
+    function imprimir(nro, cli, dir, lista, tot) {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        doc.setFontSize(16); doc.setFont("helvetica", "bold");
+        doc.text("B-P Distribuidora", 15, 20);
+        doc.setFontSize(10); doc.setFont("helvetica", "normal");
+        doc.text("Humberto Primo 2193, Burzaco", 15, 26);
+        doc.text("Tel: 1168136926 / 1126127218", 15, 31);
+        doc.text(`REMITO N°: ${String(nro).padStart(6, '0')}`, 140, 20);
+        doc.text(`Fecha: ${new Date().toLocaleDateString()}`, 140, 26);
+        doc.line(15, 38, 195, 38);
+        doc.text(`CLIENTE: ${cli.toUpperCase()}`, 15, 48);
+        doc.text(`DOMICILIO: ${dir.toUpperCase()}`, 15, 54);
+        
+        const body = lista.map(i => [i.codigo, i.nombre, i.cantidad, `$${i.precio}`, `$${i.cantidad * i.precio}`]);
+        doc.autoTable({ startY: 60, head: [['COD', 'PRODUCTO', 'CANT', 'PRECIO', 'SUB']], body, headStyles: { fillColor: [255, 43, 43] } });
+        doc.text(`TOTAL: $${tot.toLocaleString('es-AR')}`, 195, doc.lastAutoTable.finalY + 10, { align: "right" });
+        doc.save(`Remito_${nro}_Actualizado.pdf`);
+    }
+
+    document.getElementById('btnLogout').onclick = () => signOut(auth);
+  </script>
+</body>
+</html>

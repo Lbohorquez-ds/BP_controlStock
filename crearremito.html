@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Crear Remito - B-P Sanitarios</title>
+  <link rel="stylesheet" href="Style.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+  
+  <style>
+    body { background: #f3f3f3; color: #fff; }
+    .container { max-width: 1200px; margin: 30px auto; padding: 20px; }
+    h1 { color: #111; text-align: center; font-size: 40px; margin-bottom: 5px; }
+    .subtitulo { color: #666; text-align: center; margin-bottom: 30px; font-weight: 400; }
+    .card { background: #1b1b1b; padding: 25px; border-radius: 12px; border: 1px solid #2b2b2b; margin-bottom: 25px; }
+    .card h3 { color: #fff; margin-top: 0; margin-bottom: 20px; border-bottom: 1px solid #ff2b2b; display: inline-block; }
+    table { width: 100%; border-collapse: collapse; background: white; color: #333; border-radius: 10px; overflow: hidden; }
+    th { background: #ff2b2b; color: white; padding: 15px; }
+    td { padding: 12px; border-bottom: 1px solid #eee; text-align: center; }
+    input { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #444; background: #fff; color: #000; margin-bottom: 10px; box-sizing: border-box; }
+    .btn-final { background: #28a745; color: white; padding: 15px; width: 100%; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; text-transform: uppercase; }
+    .total-box { text-align: right; font-size: 26px; margin-top: 20px; color: #111; font-weight: bold; }
+    label { display: block; margin-bottom: 5px; font-size: 12px; color: #888; text-transform: uppercase; }
+  </style>
+</head>
+<body>
+
+  <nav class="nav-custom">
+    <div class="nav-links">
+      <a href="index.html">INICIO</a>
+      <a href="productos.html">PRODUCTOS</a>
+      <a href="crearremito.html" class="active">REMITOS</a>
+    </div>
+    <button class="btn-logout" id="btnLogout">Cerrar Sesión</button>
+  </nav>
+
+  <div class="container">
+    <h1>B-P Sanitarios</h1>
+    <div class="subtitulo">Generación de Remito Correlativo</div>
+
+    <div class="card">
+      <h3>Datos del Cliente</h3>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+        <div>
+          <label>Nombre o Razón Social</label>
+          <input type="text" id="clienteNombre" placeholder="Nombre del cliente">
+        </div>
+        <div>
+          <label>Dirección</label>
+          <input type="text" id="clienteDir" placeholder="Dirección">
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Artículos Seleccionados</h3>
+      <div style="overflow-x:auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>Cant.</th>
+              <th>Código</th>
+              <th>Producto</th>
+              <th>Precio Unit.</th>
+              <th>Subtotal</th>
+              <th>Acción</th>
+            </tr>
+          </thead>
+          <tbody id="tablaCarrito"></tbody>
+        </table>
+      </div>
+      <div class="total-box">TOTAL REMITO: <span id="totalRemito">$0,00</span></div>
+    </div>
+
+    <button class="btn-final" id="btnProcesar">Generar Remito N° <span id="proximoNro">...</span></button>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getDatabase, ref, set, update, get, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+    import { getAuth, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCtn8b4kpU616tgH56Gw-NDH0o5zLDn48Q",
+      authDomain: "bpsanitariossrl.firebaseapp.com",
+      databaseURL: "https://bpsanitariossrl-default-rtdb.firebaseio.com",
+      projectId: "bpsanitariossrl",
+      storageBucket: "bpsanitariossrl.firebasestorage.app",
+      messagingSenderId: "761286267293",
+      appId: "1:761286267293:web:bfe8bf3e25a9fe22621f74"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const auth = getAuth(app);
+
+    let carrito = JSON.parse(localStorage.getItem('bp_carrito')) || [];
+    let proximoNumero = 1;
+
+    async function obtenerSiguienteNumero() {
+      const nroRef = ref(db, 'config/ultimoRemito');
+      const snap = await get(nroRef);
+      if (snap.exists()) {
+        proximoNumero = snap.val() + 1;
+      } else {
+        proximoNumero = 1;
+      }
+      document.getElementById('proximoNro').textContent = proximoNumero;
+    }
+
+    onAuthStateChanged(auth, (user) => {
+      if (!user) window.location.href = "index.html";
+      else {
+        renderCarrito();
+        obtenerSiguienteNumero();
+      }
+    });
+
+    function renderCarrito() {
+      const tbody = document.getElementById('tablaCarrito');
+      let total = 0;
+      if (carrito.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6">Carrito vacío</td></tr>';
+        return;
+      }
+      tbody.innerHTML = carrito.map((c, i) => {
+        const sub = c.cantidad * c.precio;
+        total += sub;
+        return `<tr>
+          <td>${c.cantidad}</td>
+          <td>${c.codigo}</td>
+          <td>${c.nombre}</td>
+          <td>$${Number(c.precio).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+          <td>$${sub.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+          <td><button style="background:red; color:white; border:none; padding:5px 10px; cursor:pointer;" onclick="eliminarItem(${i})">X</button></td>
+        </tr>`;
+      }).join('');
+      document.getElementById('totalRemito').textContent = `$${total.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    }
+
+    window.eliminarItem = (index) => {
+      carrito.splice(index, 1);
+      localStorage.setItem('bp_carrito', JSON.stringify(carrito));
+      renderCarrito();
+    };
+
+    const procesarRemito = async () => {
+      const cliente = document.getElementById('clienteNombre').value.trim();
+      const direccion = document.getElementById('clienteDir').value.trim();
+
+      if (!cliente || carrito.length === 0) {
+        alert("Complete los datos del cliente y productos.");
+        return;
+      }
+
+      try {
+        for (const item of carrito) {
+          const prodRef = ref(db, `stockPorMarca/${item.id}`);
+          const snap = await get(prodRef);
+          if (snap.exists()) {
+            await update(prodRef, { cantidad: snap.val().cantidad - item.cantidad });
+          }
+        }
+
+        const total = carrito.reduce((acc, curr) => acc + (curr.precio * curr.cantidad), 0);
+        await set(ref(db, `remitos/${proximoNumero}`), {
+          nroRemito: proximoNumero,
+          cliente,
+          direccion,
+          items: carrito,
+          total,
+          fecha: serverTimestamp()
+        });
+
+        await set(ref(db, 'config/ultimoRemito'), proximoNumero);
+
+        generarPDF(proximoNumero, cliente, direccion, carrito, total);
+
+        localStorage.removeItem('bp_carrito');
+        alert(`✅ Remito N° ${proximoNumero} generado correctamente.`);
+        window.location.href = "index.html";
+
+      } catch (error) {
+        alert("Error: " + error.message);
+      }
+    };
+
+    function generarPDF(nro, cliente, direccion, items, total) {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      
+      doc.setFontSize(16); doc.setFont("helvetica", "bold");
+      doc.text("B-P Distribuidora", 15, 20);
+      
+      doc.setFontSize(10); doc.setFont("helvetica", "normal");
+      doc.text("Humberto Primo 2193, Burzaco", 15, 26);
+      doc.text("Tel: 1168136926 / 1126127218", 15, 31);
+      doc.text("Email: bpsanitarios@gmail.com", 15, 36);
+      
+      doc.text(`REMITO N°: ${String(nro).padStart(6, '0')}`, 140, 20);
+      doc.text(`Fecha: ${new Date().toLocaleDateString()}`, 140, 26);
+      doc.line(15, 40, 195, 40);
+
+      doc.text(`CLIENTE: ${cliente.toUpperCase()}`, 15, 50);
+      doc.text(`DOMICILIO: ${direccion.toUpperCase()}`, 15, 56);
+
+      doc.autoTable({
+        startY: 65,
+        head: [['COD.', 'PRODUCTO', 'CANT.', 'UNIT.', 'SUBTOTAL']],
+        body: items.map(i => [
+          i.codigo, 
+          i.nombre, 
+          i.cantidad, 
+          `$${Number(i.precio).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 
+          `$${(i.cantidad * i.precio).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+        ]),
+        theme: 'striped',
+        headStyles: { fillColor: [255, 43, 43] }
+      });
+
+      doc.text(`TOTAL: $${total.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 195, doc.lastAutoTable.finalY + 15, { align: "right" });
+      doc.save(`Remito_${nro}_${cliente}.pdf`);
+    }
+
+    document.getElementById('btnProcesar').addEventListener('click', procesarRemito);
+    document.getElementById('btnLogout').addEventListener('click', () => signOut(auth));
+  </script>
+</body>
+</html>

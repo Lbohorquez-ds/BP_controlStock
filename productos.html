@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Productos - B-P Sanitarios</title>
+  <link rel="stylesheet" href="Style.css">
+  <link rel="stylesheet" href="StyleProductos.css">
+  <style>
+    /* Ajustes específicos para que coincida con la imagen del usuario */
+    #tablaCarrito th {
+        background-color: #ff2b2b;
+        color: white;
+        padding: 12px;
+        text-transform: none;
+        letter-spacing: 0;
+    }
+    #tablaCarrito td {
+        background-color: white;
+        color: black;
+        border-bottom: 1px solid #eee;
+        padding: 10px;
+        text-align: center;
+    }
+    .btn-save-cart {
+        background: #444;
+        color: white;
+        border-radius: 4px;
+        padding: 6px 12px;
+        font-weight: bold;
+    }
+    .btn-quit-cart {
+        background: #c82333;
+        color: white;
+        border-radius: 4px;
+        padding: 6px 12px;
+        font-weight: bold;
+    }
+    .cart-input {
+        width: 60px !important;
+        padding: 5px !important;
+        text-align: center;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+    }
+    /* Arreglo para el selector de Marca */
+    select#marca {
+        height: 45px;
+        box-sizing: border-box;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="loginBox" style="display:none; text-align:center; padding:50px;">
+    <div class="card" style="max-width:400px; margin:auto;">
+      <h2>B-P Sanitarios - Login</h2>
+      <input type="email" id="email" placeholder="Email" style="margin-bottom:10px"><br>
+      <input type="password" id="password" placeholder="Contraseña" style="margin-bottom:10px"><br>
+      <button class="btn-primary" onclick="login()" style="width:100%">Entrar</button>
+    </div>
+  </div>
+
+  <div id="app" style="display:none;">
+    <nav class="nav-custom">
+      <div class="nav-links">
+        <a href="index.html">INICIO</a>
+        <a href="productos.html" class="active">PRODUCTOS</a>
+        <a href="remitos.html">REMITOS</a>
+      </div>
+      <button class="btn-logout" onclick="cerrarSesion()">Cerrar Sesión</button>
+    </nav>
+
+    <div class="container">
+      <h1>B-P Sanitarios</h1>
+      <div class="subtitulo">Gestión de Inventario</div>
+
+      <div class="card">
+        <h2>Añadir Producto</h2>
+        <div class="grid">
+          <input type="text" id="codigo" placeholder="Código">
+          <select id="marca">
+            <option value="">Marca...</option>
+            <option value="Duke">Duke</option>
+            <option value="TF3">TF3</option>
+            <option value="Bonomini">Bonomini</option>
+            <option value="Dealer">Dealer</option>
+            <option value="Otros">Otros</option>
+          </select>
+          <input type="text" id="nombre" placeholder="Nombre">
+          <input type="number" id="cantidad" placeholder="Stock Inicial">
+          <input type="number" id="precio" placeholder="Precio" step="0.01">
+        </div>
+        <button class="btn-primary" style="margin-top:15px" onclick="agregarProducto()">Guardar Producto</button>
+        <div id="mensaje" class="mensaje"></div>
+      </div>
+
+      <div class="card">
+        <h2>Stock Actual</h2>
+        <input type="text" id="busqueda" placeholder="Buscar por nombre o código..." oninput="renderTabla()" style="margin-bottom:15px">
+        <div class="tabs" id="tabMarcas">
+            <button class="tab active" onclick="cambiarMarca('Todas', this)">Todas</button>
+            <button class="tab" onclick="cambiarMarca('Duke', this)">Duke</button>
+            <button class="tab" onclick="cambiarMarca('TF3', this)">TF3</button>
+            <button class="tab" onclick="cambiarMarca('Bonomini', this)">Bonomini</button>
+            <button class="tab" onclick="cambiarMarca('Dealer', this)">Dealer</button>
+        </div>
+        <div style="overflow-x:auto">
+          <table id="tablaStockCompleta">
+            <thead>
+              <tr>
+                <th>Código</th>
+                <th>Marca</th>
+                <th>Descripción</th>
+                <th>Stock</th>
+                <th>Modificar Stock</th>
+                <th>Modificar Precio</th>
+                <th>Al Carrito</th>
+              </tr>
+            </thead>
+            <tbody id="tablaStock"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card" style="border-top: 4px solid #ff2b2b; padding: 0; overflow: hidden;">
+        <h2 style="padding: 20px; margin: 0; background: #1b1b1b; color: white;">Carrito actual</h2>
+        <div style="overflow-x:auto">
+          <table style="width: 100%; border-collapse: collapse;" id="tablaCarritoEstructura">
+           <thead>
+              <tr>
+                <th>Cantidad</th> 
+                <th>Código</th>
+                <th>Descripción</th>
+                <th>Unitario</th>
+                <th>Total</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="tablaCarrito"></tbody>
+          </table>
+        </div>
+        <div style="background: #111; color: white; text-align: right; padding: 15px; font-weight: bold; font-size: 20px;">
+            Total general: <span id="totalCarrito">$0.00</span>
+        </div>
+        <div style="text-align:right; padding: 15px; background: #1b1b1b; display: flex; justify-content: flex-end; gap: 10px;">
+          <button class="btn-secondary" onclick="vaciarCarrito()">Vaciar Carrito</button>
+          <a href="crearremito.html"><button class="btn-success">Hacer Remito</button></a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getDatabase, ref, push, onValue, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+    import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCtn8b4kpU616tgH56Gw-NDH0o5zLDn48Q",
+      authDomain: "bpsanitariossrl.firebaseapp.com",
+      databaseURL: "https://bpsanitariossrl-default-rtdb.firebaseio.com",
+      projectId: "bpsanitariossrl",
+      storageBucket: "bpsanitariossrl.firebasestorage.app",
+      messagingSenderId: "761286267293",
+      appId: "1:761286267293:web:bfe8bf3e25a9fe22621f74"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const auth = getAuth(app);
+    const productosRef = ref(db, 'stockPorMarca');
+
+    let productos = [];
+    let carrito = JSON.parse(localStorage.getItem('bp_carrito')) || [];
+    let marcaFiltro = 'Todas';
+
+    function msg(t, tipo='ok'){
+      const e = document.getElementById('mensaje');
+      if(!e) return;
+      e.textContent = t; e.className = 'mensaje '+tipo;
+      setTimeout(()=> { if(e) e.className = 'mensaje'; }, 3000);
+    }
+
+    // --- LÓGICA DE PRODUCTOS ---
+    window.agregarProducto = async () => {
+      const codigo = document.getElementById('codigo').value.trim();
+      const marca = document.getElementById('marca').value;
+      const nombre = document.getElementById('nombre').value.trim();
+      const cantidad = Number(document.getElementById('cantidad').value);
+      const precio = Number(document.getElementById('precio').value);
+
+      if(!codigo || !marca || !nombre || isNaN(precio)){
+        msg("⚠️ Faltan datos", "error"); return;
+      }
+      if(productos.some(p => p.codigo.toLowerCase() === codigo.toLowerCase())){
+        msg("❌ Código duplicado", "error"); return;
+      }
+
+      await push(productosRef, { codigo, marca, nombre, cantidad, precio });
+      msg("✅ Guardado");
+      document.querySelectorAll('.card input, .card select').forEach(i => i.value = '');
+    };
+
+    window.sumarStock = (id) => {
+      const p = productos.find(x => x.id === id);
+      const v = Number(document.getElementById(`mov-${id}`).value);
+      if(v > 0) update(ref(db, `stockPorMarca/${id}`), { cantidad: p.cantidad + v });
+      document.getElementById(`mov-${id}`).value = '';
+    };
+
+    window.restarStock = (id) => {
+      const p = productos.find(x => x.id === id);
+      const v = Number(document.getElementById(`mov-${id}`).value);
+      if(v > 0 && p.cantidad >= v) update(ref(db, `stockPorMarca/${id}`), { cantidad: p.cantidad - v });
+      document.getElementById(`mov-${id}`).value = '';
+    };
+
+    window.guardarPrecio = (id) => {
+      const np = Number(document.getElementById(`precio-${id}`).value);
+      if(np >= 0) update(ref(db, `stockPorMarca/${id}`), { precio: np }).then(()=> msg("Precio actualizado"));
+    };
+
+    // --- LÓGICA DE CARRITO Y VALIDACIÓN ---
+
+    window.agregarCarrito = (id) => {
+      const p = productos.find(x => x.id === id);
+      const cantInput = document.getElementById(`cart-${id}`);
+      const cantAñadir = Number(cantInput.value);
+      
+      if(cantAñadir <= 0) return;
+
+      const enCarrito = carrito.find(c => c.id === id);
+      const cantActualEnCarrito = enCarrito ? enCarrito.cantidad : 0;
+
+      // VALIDACIÓN DE STOCK
+      if((cantActualEnCarrito + cantAñadir) > p.cantidad) {
+        alert(`❌ Stock insuficiente. Solo hay ${p.cantidad} disponibles y ya tienes ${cantActualEnCarrito} en el carrito.`);
+        return;
+      }
+
+      if(enCarrito) {
+        enCarrito.cantidad += cantAñadir;
+      } else {
+        carrito.push({ id: p.id, codigo: p.codigo, nombre: p.nombre, precio: p.precio, cantidad: cantAñadir });
+      }
+
+      localStorage.setItem('bp_carrito', JSON.stringify(carrito));
+      renderCarrito();
+      cantInput.value = '';
+      msg("Añadido al carrito");
+    };
+
+    window.actualizarCantidadCarrito = (idx) => {
+      const input = document.getElementById(`edit-cart-${idx}`);
+      const nuevaCant = Number(input.value);
+      const item = carrito[idx];
+      const productoReal = productos.find(p => p.id === item.id);
+
+      if (nuevaCant <= 0) {
+        alert("La cantidad debe ser al menos 1");
+        input.value = item.cantidad;
+        return;
+      }
+
+      // VALIDACIÓN DE STOCK AL GUARDAR
+      if (productoReal && nuevaCant > productoReal.cantidad) {
+        alert(`❌ Stock insuficiente. El stock máximo para "${productoReal.nombre}" es de ${productoReal.cantidad}.`);
+        input.value = item.cantidad;
+        return;
+      }
+
+      item.cantidad = nuevaCant;
+      localStorage.setItem('bp_carrito', JSON.stringify(carrito));
+      renderCarrito();
+      msg("✅ Cantidad actualizada");
+    };
+
+    window.eliminarCarrito = (idx) => {
+      carrito.splice(idx, 1);
+      localStorage.setItem('bp_carrito', JSON.stringify(carrito));
+      renderCarrito();
+    };
+
+    window.vaciarCarrito = () => { 
+        if(confirm("¿Estás seguro de vaciar el carrito?")){ 
+            carrito=[]; 
+            localStorage.removeItem('bp_carrito'); 
+            renderCarrito(); 
+        }
+    };
+
+    function renderCarrito() {
+      const tbody = document.getElementById('tablaCarrito');
+      if(!tbody) return;
+      let t = 0;
+
+      if (carrito.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="padding:20px;">El carrito está vacío</td></tr>';
+        document.getElementById('totalCarrito').textContent = `$0.00`;
+        return;
+      }
+
+      tbody.innerHTML = carrito.map((c, i) => {
+        const subtotal = c.cantidad * c.precio;
+        t += subtotal;
+        return `
+          <tr>
+            <td>${c.cantidad}</td>
+            <td>${c.codigo}</td>
+            <td style="text-align:left;">${c.nombre}</td>
+            <td>$${c.precio.toLocaleString('es-AR')}</td>
+            <td>$${subtotal.toLocaleString('es-AR')}</td>
+            <td>
+              <div class="row-actions" style="justify-content: center; gap: 5px;">
+                <input type="number" id="edit-cart-${i}" class="cart-input" value="${c.cantidad}" min="1">
+                <button class="btn-save-cart" onclick="actualizarCantidadCarrito(${i})">Guardar</button>
+                <button class="btn-quit-cart" onclick="eliminarCarrito(${i})">Quitar</button>
+              </div>
+            </td>
+          </tr>`;
+      }).join('');
+      
+      document.getElementById('totalCarrito').textContent = `$${t.toLocaleString('es-AR')}`;
+    }
+
+    // --- TABLA DE STOCK ---
+    window.renderTabla = () => {
+      const busc = document.getElementById('busqueda').value.toLowerCase();
+      const tbody = document.getElementById('tablaStock');
+      const filtrados = productos.filter(p => 
+        (marcaFiltro === 'Todas' || p.marca === marcaFiltro) &&
+        (p.nombre.toLowerCase().includes(busc) || p.codigo.toLowerCase().includes(busc))
+      );
+
+      tbody.innerHTML = filtrados.map(p => `
+        <tr>
+          <td>${p.codigo}</td>
+          <td><span class="chip">${p.marca}</span></td>
+          <td>${p.nombre}</td>
+          <td class="${p.cantidad < 5 ? 'alerta-stock' : ''}"><strong>${p.cantidad}</strong></td>
+          <td>
+            <div class="row-actions">
+              <input type="number" id="mov-${p.id}" class="small-input" placeholder="Cant.">
+              <button class="btn-secondary" onclick="sumarStock('${p.id}')">+</button>
+              <button class="btn-secondary" onclick="restarStock('${p.id}')">-</button>
+            </div>
+          </td>
+          <td>
+            <div class="row-actions">
+              <input type="number" id="precio-${p.id}" class="price-input" value="${p.precio}" step="0.01">
+              <button class="btn-secondary" onclick="guardarPrecio('${p.id}')" title="Guardar Precio">💾</button>
+            </div>
+          </td>
+          <td>
+            <div class="row-actions">
+              <input type="number" id="cart-${p.id}" class="small-input" placeholder="Cant.">
+              <button class="btn-success" onclick="agregarCarrito('${p.id}')">Añadir</button>
+            </div>
+          </td>
+        </tr>
+      `).join('');
+    };
+
+    window.cambiarMarca = (m, b) => {
+      marcaFiltro = m;
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      b.classList.add('active');
+      renderTabla();
+    };
+
+    // --- AUTH & DATA ---
+    onAuthStateChanged(auth, user => {
+      if(user){
+        document.getElementById('app').style.display='block';
+        document.getElementById('loginBox').style.display='none';
+        onValue(productosRef, snap => {
+          productos = Object.entries(snap.val()||{}).map(([id,v])=>({id,...v}));
+          renderTabla(); renderCarrito();
+        });
+      } else {
+        document.getElementById('app').style.display='none';
+        document.getElementById('loginBox').style.display='block';
+      }
+    });
+
+    window.login = () => signInWithEmailAndPassword(auth, document.getElementById('email').value, document.getElementById('password').value).catch(e=>alert("Error login"));
+    window.cerrarSesion = () => signOut(auth);
+  </script>
+</body>
+</html>
