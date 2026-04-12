@@ -1,0 +1,212 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gestión de Clientes - B-P Sanitarios</title>
+  <link rel="stylesheet" href="Style.css">
+  <link rel="stylesheet" href="StyleProductos.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+  
+  <style>
+    body { background: #f3f3f3; color: #111; }
+    .container { max-width: 1200px; margin: 30px auto; padding: 20px; }
+    .card-clientes { background: #1b1b1b; padding: 25px; border-radius: 12px; border: 1px solid #2b2b2b; color: #fff; margin-bottom: 25px; }
+    .card-clientes h3 { color: #fff; border-bottom: 2px solid #ff2b2b; display: inline-block; margin-bottom: 20px; text-transform: uppercase; }
+    
+    .form-control { width: 100%; border: 2px solid #444; padding: 12px; border-radius: 8px; background-color: #fff !important; color: #000 !important; font-weight: 500; }
+    .table-container { background: white; border-radius: 10px; overflow: hidden; margin-top: 15px; }
+    table { width: 100%; border-collapse: collapse; background: white; }
+    th { background: #ff2b2b; color: white; padding: 15px; font-size: 13px; text-transform: uppercase; }
+    td { padding: 12px; border-bottom: 1px solid #eee; text-align: center; color: #333 !important; font-size: 14px; }
+    
+    /* Botones mejorados con color de texto forzado */
+    .btn-edit-table { background: #28a745; color: white !important; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+    .btn-delete-table { background: #dc3545; color: white !important; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+    .btn-save-table { background: #007bff; color: white !important; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+    
+    .input-inline { width: 95%; padding: 8px; border: 2px solid #007bff; border-radius: 4px; background: white !important; color: black !important; font-weight: bold; }
+  </style>
+</head>
+<body>
+
+  <div id="app">
+    <nav class="nav-custom">
+      <div class="nav-links">
+        <a href="index.html">INICIO</a>
+        <a href="productos.html">PRODUCTOS</a>
+        <a href="remitos.html">REMITOS</a>
+        <a href="clientes.html" class="active">CLIENTES</a>
+      </div>
+      <button class="btn-logout" id="btnLogout">Cerrar Sesión</button>
+    </nav>
+
+    <div class="container">
+      <h1>B-P Sanitarios</h1>
+      <div class="subtitulo">Gestión de Base de Datos de Clientes</div>
+
+      <div class="card-clientes">
+        <h3>+ Nuevo Cliente</h3>
+        <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 20px;">
+          <input type="text" id="nuevoNombre" class="form-control" placeholder="Nombre / Razón Social">
+          <input type="text" id="nuevaDireccion" class="form-control" placeholder="Dirección / Localidad">
+        </div>
+        <button class="btn-success" onclick="agregarCliente()" style="width:100%; margin-top:15px; padding:12px;">GUARDAR NUEVO CLIENTE</button>
+      </div>
+
+      <div class="card-clientes">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom:15px;">
+            <h3>Lista de Clientes</h3>
+            <button class="btn-primary" onclick="imprimirListadoPDF()">📥 GENERAR PDF</button>
+        </div>
+        <input type="text" id="buscarCliente" class="form-control" style="border-color: #ff2b2b; margin-bottom:15px;" placeholder="🔍 Buscar cliente..." oninput="filtrarClientes()">
+
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th style="width: 35%;">Nombre</th>
+                <th style="width: 45%;">Dirección</th>
+                <th style="width: 20%;">Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="listaClientes"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getDatabase, ref, onValue, set, push, remove, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCtn8b4kpU616tgH56Gw-NDH0o5zLDn48Q",
+      authDomain: "bpsanitariossrl.firebaseapp.com",
+      databaseURL: "https://bpsanitariossrl-default-rtdb.firebaseio.com",
+      projectId: "bpsanitariossrl",
+      storageBucket: "bpsanitariossrl.firebasestorage.app"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const auth = getAuth(app);
+
+    let clientesRaw = [];
+    let editandoId = null;
+
+    onAuthStateChanged(auth, user => {
+      if(user){
+        onValue(ref(db, 'clientes'), snap => {
+          const data = snap.val() || {};
+          clientesRaw = Object.entries(data).map(([id, v]) => ({ id, ...v }));
+          clientesRaw.sort((a,b) => a.nombre.localeCompare(b.nombre));
+          window.renderClientes(clientesRaw); 
+        });
+      } else { window.location.href = "index.html"; }
+    });
+
+    window.agregarCliente = async () => {
+        const nombre = document.getElementById('nuevoNombre').value.trim();
+        const direccion = document.getElementById('nuevaDireccion').value.trim();
+        if(!nombre || !direccion) return alert("Completa los campos");
+        
+        await push(ref(db, 'clientes'), {
+            nombre: nombre.toUpperCase(),
+            direccion: direccion.toUpperCase()
+        });
+        document.getElementById('nuevoNombre').value = "";
+        document.getElementById('nuevaDireccion').value = "";
+    };
+
+    window.renderClientes = (lista) => {
+      const tbody = document.getElementById('listaClientes');
+      tbody.innerHTML = lista.map(c => {
+        if (editandoId === c.id) {
+          return `
+            <tr>
+              <td><input type="text" id="edit-nom-${c.id}" class="input-inline" value="${c.nombre}"></td>
+              <td><input type="text" id="edit-dir-${c.id}" class="input-inline" value="${c.direccion}"></td>
+              <td style="display: flex; gap: 5px; justify-content: center;">
+                <button class="btn-save-table" onclick="guardarEdicion('${c.id}')">GUARDAR</button>
+                <button class="btn-delete-table" onclick="cancelarEdicion()">X</button>
+              </td>
+            </tr>`;
+        }
+        return `
+          <tr>
+            <td style="text-align:left; font-weight:bold; color: #000 !important;">${c.nombre}</td>
+            <td style="text-align:left; color: #333 !important;">${c.direccion}</td>
+            <td style="display: flex; gap: 5px; justify-content: center;">
+              <button class="btn-edit-table" onclick="activarEdicion('${c.id}')">EDITAR</button>
+              <button class="btn-delete-table" onclick="eliminarCliente('${c.id}')">BORRAR</button>
+            </td>
+          </tr>`;
+      }).join('');
+    }
+
+    window.activarEdicion = (id) => { 
+        editandoId = id; 
+        window.renderClientes(clientesRaw); 
+    };
+
+    window.cancelarEdicion = () => { 
+        editandoId = null; 
+        window.renderClientes(clientesRaw); 
+    };
+
+    window.guardarEdicion = async (id) => {
+      const inputNom = document.getElementById(`edit-nom-${id}`);
+      const inputDir = document.getElementById(`edit-dir-${id}`);
+      
+      if(inputNom && inputDir) {
+        const nuevoNom = inputNom.value.trim().toUpperCase();
+        const nuevaDir = inputDir.value.trim().toUpperCase();
+        
+        try {
+            // Actualizamos en Firebase
+            await update(ref(db, `clientes/${id}`), { nombre: nuevoNom, direccion: nuevaDir });
+            
+            // IMPORTANTE: Limpiamos el ID de edición y redibujamos
+            editandoId = null; 
+            window.renderClientes(clientesRaw); 
+            
+            console.log("¡Cliente actualizado!");
+        } catch (e) {
+            alert("Error al guardar cambios");
+        }
+      }
+    };
+
+    window.eliminarCliente = async (id) => {
+      if(confirm("¿Eliminar este cliente definitivamente?")) {
+        await remove(ref(db, `clientes/${id}`));
+      }
+    };
+
+    window.filtrarClientes = () => {
+      const txt = document.getElementById('buscarCliente').value.toLowerCase();
+      const filtrados = clientesRaw.filter(c => c.nombre.toLowerCase().includes(txt) || c.direccion.toLowerCase().includes(txt));
+      window.renderClientes(filtrados);
+    };
+
+    window.imprimirListadoPDF = () => {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        doc.text("LISTADO DE CLIENTES - B-P SANITARIOS", 14, 20);
+        doc.autoTable({
+            head: [['NOMBRE', 'DIRECCIÓN']],
+            body: clientesRaw.map(c => [c.nombre, c.direccion]),
+            startY: 25,
+            headStyles: { fillColor: [255, 43, 43] }
+        });
+        doc.save("Clientes_BP.pdf");
+    };
+
+    document.getElementById('btnLogout').onclick = () => signOut(auth);
+  </script>
+</body>
+</html>
