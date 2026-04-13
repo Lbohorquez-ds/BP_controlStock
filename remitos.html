@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
@@ -7,96 +7,60 @@
   <link rel="stylesheet" href="Style.css">
   <link rel="stylesheet" href="StyleProductos.css">
   <style>
-    /* 1. Estética General */
     body { background: #f3f3f3; color: #111; }
     .container { max-width: 1200px; margin: 30px auto; padding: 20px; }
     h1 { color: #111; text-align: center; font-size: 40px; margin-bottom: 5px; }
     .subtitulo { color: #666; text-align: center; margin-bottom: 30px; font-weight: 400; }
-
-    /* 2. Tarjeta Dark */
-    .card-remitos { 
-        background: #1b1b1b; 
-        padding: 25px; 
-        border-radius: 12px; 
-        border: 1px solid #2b2b2b; 
-        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-        margin-bottom: 25px;
-    }
+    .card-remitos { background: #1b1b1b; padding: 25px; border-radius: 12px; border: 1px solid #2b2b2b; margin-bottom: 25px; }
     .card-remitos h3 { color: #fff; margin-top: 0; border-bottom: 2px solid #ff2b2b; display: inline-block; padding-bottom: 5px; margin-bottom: 20px; }
-    
-    /* 3. BUSCADOR BLANCO (CORREGIDO) */
     .search-label { color: #fff; font-weight: bold; display: block; margin-bottom: 8px; font-size: 14px; text-transform: uppercase; }
-    
-    #busquedaRemito { 
-        width: 100%; 
-        border: 2px solid #ff2b2b; /* Borde rojo para que resalte */
-        padding: 15px; 
-        border-radius: 8px; 
-        background-color: #ffffff !important; /* Fondo Blanco */
-        color: #000000 !important;           /* Letras Negras */
-        margin-bottom: 10px;
-        font-size: 16px;
-        font-weight: 500;
-    }
-
-    #busquedaRemito::placeholder { color: #777; }
-
-    /* 4. Tabla de Remitos */
-    .table-container { background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+    #busquedaRemito { width: 100%; border: 2px solid #ff2b2b; padding: 15px; border-radius: 8px; background-color: #fff !important; color: #000 !important; margin-bottom: 10px; font-size: 16px; }
+    .table-container { background: white; border-radius: 10px; overflow: hidden; }
     table { width: 100%; border-collapse: collapse; background: white; }
     th { background: #ff2b2b; color: white; padding: 15px; font-size: 13px; text-transform: uppercase; }
     td { padding: 12px; border-bottom: 1px solid #eee; text-align: center; color: #333 !important; font-size: 14px; }
-    
-    /* Resalte Cliente */
     .td-cliente { font-weight: bold; color: #000 !important; text-align: left; padding-left: 20px; }
-
-    /* 5. Botones */
     .btn-view { background: #007bff; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; }
-    .btn-edit { background: #28a745; color: white; padding: 8px 12px; border-radius: 6px; text-decoration: none; font-weight: bold; display: inline-block; }
+    .btn-edit { background: #28a745; color: white; padding: 8px 12px; border-radius: 6px; text-decoration: none; font-weight: bold; }
     .btn-anular { background: #ffc107; color: #000; padding: 8px 12px; border-radius: 6px; border: none; cursor: pointer; font-weight: bold; }
     .badge-nro { background: #f0f0f0; padding: 4px 8px; border-radius: 4px; font-family: monospace; font-weight: bold; color: #ff2b2b; border: 1px solid #ddd; }
   </style>
 </head>
 <body>
 
-  <div id="app">
-    <nav class="nav-custom">
-      <div class="nav-links">
-        <a href="index.html">INICIO</a>
-        <a href="productos.html">PRODUCTOS</a>
-        <a href="remitos.html" class="active">REMITOS</a>
-        <a href="clientes.html">CLIENTES</a>
-      </div>
-      <button class="btn-logout" id="btnLogout">Cerrar Sesión</button>
-    </nav>
+  <nav class="nav-custom">
+    <div class="nav-links">
+      <a href="index.html">INICIO</a>
+      <a href="productos.html">PRODUCTOS</a>
+      <a href="remitos.html" class="active">REMITOS</a>
+      <a href="clientes.html">CLIENTES</a>
+    </div>
+    <button class="btn-logout" id="btnLogout">Cerrar Sesión</button>
+  </nav>
 
-    <div class="container">
-      <h1>B-P Sanitarios</h1>
-      <div class="subtitulo">Historial y Gestión de Remitos</div>
+<img id="logoRemito" src="logo.webp" style="display:none;">
+  <div class="container">
+    <h1>B-P Sanitarios</h1>
+    <div class="subtitulo">Historial y Gestión de Remitos</div>
 
-      <div class="card-remitos">
-        <div style="margin-bottom: 25px;">
-          <label class="search-label">Buscar Remito (Nombre o Número):</label>
-          <input type="text" id="busquedaRemito" placeholder="Escribe aquí para buscar..." oninput="filtrarRemitos()">
-        </div>
-
-        <h3>Listado de Remitos</h3>
-        <div class="table-container">
-          <table>
-            <thead>
-              <tr>
-                <th>Nro</th>
-                <th>Fecha</th>
-                <th>Cliente</th>
-                <th>Total</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody id="listaRemitos">
-                <tr><td colspan="5" style="padding:40px">Cargando datos...</td></tr>
-            </tbody>
-          </table>
-        </div>
+    <div class="card-remitos">
+      <label class="search-label">Buscar Remito (Nombre o Número):</label>
+      <input type="text" id="busquedaRemito" placeholder="Escribe aquí para buscar..." oninput="filtrarRemitos()">
+      
+      <h3>Listado de Remitos</h3>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Nro</th>
+              <th>Fecha</th>
+              <th>Cliente</th>
+              <th>Total</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="listaRemitos"></tbody>
+        </table>
       </div>
     </div>
   </div>
@@ -113,10 +77,7 @@
       apiKey: "AIzaSyCtn8b4kpU616tgH56Gw-NDH0o5zLDn48Q",
       authDomain: "bpsanitariossrl.firebaseapp.com",
       databaseURL: "https://bpsanitariossrl-default-rtdb.firebaseio.com",
-      projectId: "bpsanitariossrl",
-      storageBucket: "bpsanitariossrl.firebasestorage.app",
-      messagingSenderId: "761286267293",
-      appId: "1:761286267293:web:bfe8bf3e25a9fe22621f74"
+      projectId: "bpsanitariossrl"
     };
 
     const app = initializeApp(firebaseConfig);
@@ -134,31 +95,24 @@
             numero: v.nroRemito || v.numero || id, 
             ...v 
           })).sort((a,b) => b.numero - a.numero);
-          filtrarRemitos();
+          renderRemitos(remitosGlobal);
         });
-      } else {
-        window.location.href = "index.html";
-      }
+      } else { window.location.href = "index.html"; }
     });
 
     function renderRemitos(lista) {
       const tbody = document.getElementById('listaRemitos');
-      if(lista.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" style="padding:20px">No se encontraron resultados.</td></tr>';
-        return;
-      }
-
       tbody.innerHTML = lista.map(r => `
         <tr>
           <td><span class="badge-nro">${String(r.numero).padStart(6, '0')}</span></td>
           <td>${r.fecha ? new Date(r.fecha).toLocaleDateString() : 'S/F'}</td>
-          <td class="td-cliente">${(r.cliente || r.clienteNombre || 'Sin nombre').toUpperCase()}</td>
-          <td style="font-weight:bold; color: #d60000 !important;">$${(r.total || 0).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</td>
+          <td class="td-cliente">${(r.cliente || "S/N").toUpperCase()}</td>
+          <td style="font-weight:bold; color: #d60000;">$${Number(r.total || 0).toLocaleString('es-AR')}</td>
           <td>
             <div style="display: flex; gap: 8px; justify-content: center;">
               <button class="btn-view" onclick="reimprimir('${r.id}')">📄</button>
-              <a href="editaremito.html?numero=${r.numero}" class="btn-edit">EDITAR</a>
-              <button class="btn-anular" onclick="anularRemito('${r.id}')">ANULAR</button>
+              <a href="editaremito.html?numero=${r.numero}" class="btn-edit">✏️</a>
+              <button class="btn-anular" onclick="anularRemito('${r.id}')">❌</button>
             </div>
           </td>
         </tr>
@@ -167,54 +121,101 @@
 
     window.filtrarRemitos = () => {
       const txt = document.getElementById('busquedaRemito').value.toLowerCase();
-      if(txt === "") {
-        renderRemitos(remitosGlobal.slice(0, 30));
-      } else {
-        const filtrados = remitosGlobal.filter(r => {
-          const nombre = (r.cliente || r.clienteNombre || "").toLowerCase();
-          const nro = String(r.numero);
-          return nombre.includes(txt) || nro.includes(txt);
-        });
-        renderRemitos(filtrados);
-      }
+      const filtrados = remitosGlobal.filter(r => 
+        (r.cliente || "").toLowerCase().includes(txt) || String(r.numero).includes(txt)
+      );
+      renderRemitos(filtrados);
     };
 
     window.anularRemito = async (id) => {
       if(!confirm("¿ANULAR REMITO? Se recuperará el stock.")) return;
-      try {
-        const snap = await get(ref(db, `remitos/${id}`));
-        const remito = snap.val();
-        if(remito && remito.items) {
-          for (const item of remito.items) {
-            if(item.id) {
-              const prodRef = ref(db, `stockPorMarca/${item.id}`);
-              const prodSnap = await get(prodRef);
-              if(prodSnap.exists()) {
-                await update(prodRef, { cantidad: (prodSnap.val().cantidad || 0) + item.cantidad });
-              }
-            }
-          }
+      const snap = await get(ref(db, `remitos/${id}`));
+      const r = snap.val();
+      if(r && r.items) {
+        for (const it of r.items) {
+          const pRef = ref(db, `stockPorMarca/${it.id}`);
+          const pSnap = await get(pRef);
+          if(pSnap.exists()) await update(pRef, { cantidad: pSnap.val().cantidad + it.cantidad });
         }
-        await remove(ref(db, `remitos/${id}`));
-        alert("✅ Eliminado.");
-      } catch (e) { alert("Error."); }
+      }
+      await remove(ref(db, `remitos/${id}`));
     };
 
-    window.reimprimir = async (id) => {
-      try {
-        const snap = await get(ref(db, `remitos/${id}`));
-        const r = snap.val();
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF();
-        doc.setFontSize(16); doc.text("B-P Distribuidora", 15, 20);
-        doc.setFontSize(10); doc.text(`REMITO N°: ${String(r.numero).padStart(6, '0')}`, 140, 20);
-        const filas = (r.items || []).map(i => [i.codigo, i.nombre, i.cantidad, `$${i.precio}`, `$${i.cantidad * i.precio}`]);
-        doc.autoTable({ startY: 60, head: [['COD.', 'PRODUCTO', 'CANT.', 'UNIT.', 'SUBTOTAL']], body: filas, theme: 'striped', headStyles: { fillColor: [255, 43, 43] } });
-        doc.save(`Remito_${r.numero}.pdf`);
-      } catch (err) { alert("Error PDF"); }
-    };
+   window.reimprimir = async (id) => {
+    const snap = await get(ref(db, `remitos/${id}`));
+    const r = snap.val();
+    if (!r) return alert("No se encontró el remito");
 
-    document.getElementById('btnLogout').addEventListener('click', () => signOut(auth));
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    
+    // Obtenemos el elemento de la imagen que precargamos
+    const imgLogo = document.getElementById('logoRemito');
+
+    try {
+        // Encabezado
+        // Usamos imgLogo directamente. jsPDF es capaz de procesar el elemento <img>
+        doc.addImage(imgLogo, 'WEBP', 10, 10, 45, 25);
+
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(18);
+        doc.text("B-P Distribuidora", 62, 18);
+
+        doc.setFontSize(9);
+        doc.setFont("helvetica", "normal");
+        doc.text("Humberto Primo 2193, Burzaco", 62, 24);
+        doc.text("Tel: 1168136926 / 1126127218", 62, 29);
+        doc.text("Email: bpsanitarios@gmail.com", 62, 34);
+
+        const nro = r.nroRemito || r.numero || "000";
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(11);
+        doc.text(`REMITO N°: ${String(nro).padStart(6, '0')}`, 195, 18, { align: "right" });
+
+        doc.setFont("helvetica", "normal");
+        doc.text(`Fecha: ${new Date(r.fecha).toLocaleDateString()}`, 195, 25, { align: "right" });
+
+        doc.line(10, 40, 200, 40);
+
+        // --- Datos del Cliente ---
+        doc.setFontSize(10);
+        doc.text(`CLIENTE: ${(r.cliente || "Consumidor Final").toUpperCase()}`, 10, 48);
+        doc.text(`DOMICILIO: ${(r.direccion || "---").toUpperCase()}`, 10, 54);
+
+        // --- Tabla ---
+        doc.autoTable({
+            startY: 60,
+            head: [['Cod.', 'Producto', 'Cant.', 'Precio Unit.', 'Subtotal']],
+            body: (r.items || []).map(i => [
+                i.codigo,
+                i.nombre,
+                i.cantidad,
+                `$${Number(i.precio).toLocaleString('es-AR')}`,
+                `$${(Number(i.cantidad) * Number(i.precio)).toLocaleString('es-AR')}`
+            ]),
+            headStyles: { fillColor: [255, 43, 43] },
+            theme: 'grid'
+        });
+
+        const finalY = doc.lastAutoTable.finalY + 10;
+        doc.setFont("helvetica", "bold");
+        doc.text(`TOTAL: $${Number(r.total || 0).toLocaleString('es-AR')}`, 195, finalY, { align: "right" });
+
+        doc.save(`Remito_${nro}.pdf`);
+
+    } catch (error) {
+        console.error("Error al generar el logo:", error);
+        alert("El logo todavía se está cargando o no se encuentra en la carpeta. Intenta de nuevo.");
+    }
+};
+
+      const finalY = doc.lastAutoTable.finalY + 10;
+      doc.setFont("helvetica", "bold"); doc.setFontSize(14);
+      doc.text(`TOTAL: $${Number(r.total || 0).toLocaleString('es-AR')}`, 195, finalY, { align: "right" });
+      
+      doc.save(`Remito_${nro}.pdf`);
+
+    document.getElementById('btnLogout').onclick = () => signOut(auth);
   </script>
 </body>
 </html>
