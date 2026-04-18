@@ -44,6 +44,8 @@
     </div>
     <button class="btn-logout" id="btnLogout">Cerrar Sesión</button>
   </nav>
+    
+    <img id="logoRemito" src="logo.webp" style="display:none;">
 
   <div class="container">
     <h1>B-P Sanitarios</h1>
@@ -92,34 +94,45 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
 
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getDatabase, ref, get, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
     const firebaseConfig = {
-      apiKey: "AIzaSyCtn8b4kpU616tgH56Gw-NDH0o5zLDn48Q",
-      authDomain: "bpsanitariossrl.firebaseapp.com",
-      databaseURL: "https://bpsanitariossrl-default-rtdb.firebaseio.com",
-      projectId: "bpsanitariossrl",
-      storageBucket: "bpsanitariossrl.firebasestorage.app"
+        apiKey: "AIzaSyCtn8b4kpU616tgH56Gw-NDH0o5zLDn48Q",
+        authDomain: "bpsanitariossrl.firebaseapp.com",
+        databaseURL: "https://bpsanitariossrl-default-rtdb.firebaseio.com",
+        projectId: "bpsanitariossrl",
+        storageBucket: "bpsanitariossrl.firebasestorage.app"
     };
 
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
     const auth = getAuth(app);
 
-    let remitoIdFirebase = ""; // El ID (ej: "5")
+    let remitoIdFirebase = "";
     let remitoOriginal = null;
     let items = [];
     let productosMaster = [];
     let seleccionado = null;
 
+    // --- 1. INICIALIZACIÓN ---
     onAuthStateChanged(auth, async user => {
-        if(!user) window.location.href="index.html";
+        if(!user) {
+            window.location.href="index.html";
+            return;
+        }
+        
         await cargarProductos();
         
-        const nroUrl = new URLSearchParams(window.location.search).get('numero');
-        if(nroUrl) traerRemito(nroUrl);
+        const urlParams = new URLSearchParams(window.location.search);
+        const idUrl = urlParams.get('id'); 
+        
+        if(idUrl) {
+            traerRemito(idUrl);
+        } else {
+            alert("Error: No se encontró la ID del remito");
+        }
     });
 
     async function cargarProductos() {
@@ -127,24 +140,27 @@
         productosMaster = Object.entries(snap.val()||{}).map(([id, v]) => ({ id, ...v }));
     }
 
-    async function traerRemito(nro) {
-        remitoIdFirebase = nro;
-        const snap = await get(ref(db, `remitos/${nro}`));
+    async function traerRemito(id) {
+        remitoIdFirebase = id;
+        const snap = await get(ref(db, `remitos/${id}`));
         if(snap.exists()){
             remitoOriginal = snap.val();
-            items = JSON.parse(JSON.stringify(remitoOriginal.items)); // Copia profunda
+            items = JSON.parse(JSON.stringify(remitoOriginal.items || []));
             document.getElementById('editCliente').value = remitoOriginal.cliente || "";
             document.getElementById('editDireccion').value = remitoOriginal.direccion || "";
-            document.getElementById('nroTitulo').textContent = nro;
+            document.getElementById('nroTitulo').textContent = remitoOriginal.nroRemito || remitoOriginal.numero || "---";
             render();
+        } else {
+            alert("El remito no existe en la base de datos.");
         }
     }
 
+    // --- 2. FUNCIONES DE INTERFAZ ---
     window.sugerirProductos = () => {
         const val = document.getElementById('buscarProdInput').value.toLowerCase();
         const div = document.getElementById('sugerencias');
         if(val.length < 2) { div.innerHTML = ""; return; }
-        const filtro = productosMaster.filter(p => p.codigo.toLowerCase().includes(val) || p.nombre.toLowerCase().includes(val)).slice(0,5);
+        const filtro = productosMaster.filter(p => (p.codigo||"").toLowerCase().includes(val) || (p.nombre||"").toLowerCase().includes(val)).slice(0,5);
         div.innerHTML = filtro.map(p => `
             <div class="sug-item" onclick="seleccionarProd('${p.id}')">
                 ${p.codigo} - ${p.nombre} <b style="color:${p.cantidad <= 0 ? 'red':'#28a745'}">(Stock: ${p.cantidad})</b>
@@ -159,16 +175,13 @@
         document.getElementById('sugerencias').innerHTML = "";
     };
 
+    window.cambiarCant = (i, v) => { items[i].cantidad = Number(v); render(); };
+    window.cambiarPrecio = (i, v) => { items[i].precio = Number(v); render(); };
+    window.eliminar = (i) => { items.splice(i, 1); render(); };
+
     document.getElementById('btnAdd').onclick = () => {
         if(!seleccionado) return alert("Seleccione un producto");
         const cant = Number(document.getElementById('newCant').value);
-        
-        // Verificación de stock antes de agregar a la lista
-        if(cant > seleccionado.cantidad) {
-            alert(`⚠️ ADVERTENCIA: Stock insuficiente. Solo hay ${seleccionado.cantidad} unidades disponibles.`);
-            return;
-        }
-        
         items.push({ 
             id: seleccionado.id, 
             codigo: seleccionado.codigo, 
@@ -188,90 +201,42 @@
             total += sub;
             return `<tr>
                 <td>${it.codigo}</td><td>${it.nombre}</td>
-                <td><input type="number" value="${it.cantidad}" onchange="cambiarCant(${idx}, this.value)" style="width:60px;"></td>
-                <td><input type="number" value="${it.precio}" onchange="cambiarPrecio(${idx}, this.value)" style="width:80px;"></td>
+                <td><input type="number" value="${it.cantidad}" onchange="cambiarCant(${idx}, this.value)" style="width:60px; background:#333 !important;"></td>
+                <td><input type="number" value="${it.precio}" onchange="cambiarPrecio(${idx}, this.value)" style="width:80px; background:#333 !important;"></td>
                 <td>$${sub.toLocaleString()}</td>
                 <td><button class="btn-remove" onclick="eliminar(${idx})">X</button></td>
             </tr>`;
         }).join('');
-        document.getElementById('totalTxt').textContent = `$${total.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        document.getElementById('totalTxt').textContent = `$${total.toLocaleString('es-AR', { minimumFractionDigits: 2 })}`;
     }
 
-    window.cambiarCant = (i, v) => { items[i].cantidad = Number(v); render(); };
-    window.cambiarPrecio = (i, v) => { items[i].precio = Number(v); render(); };
-    window.eliminar = (i) => { items.splice(i, 1); render(); };
-
+    // --- 3. GUARDADO ---
     document.getElementById('btnFinalizar').onclick = async () => {
+        const btn = document.getElementById('btnFinalizar');
+        btn.disabled = true;
+        btn.textContent = "PROCESANDO...";
+
         try {
-            // RE-CARGAR PRODUCTOS PARA VER STOCK REAL ACTUALIZADO
-            await cargarProductos();
-
-            // VALIDACIÓN FINAL ANTES DE GUARDAR
-            for(const it of items) {
-                const p = productosMaster.find(x => x.id === it.id);
-                // Calculamos el stock virtual: (Stock en DB + Cantidad que tenía el remito antes)
-                const itemOriginal = remitoOriginal.items.find(orig => orig.id === it.id);
-                const cantOriginalEnRemito = itemOriginal ? itemOriginal.cantidad : 0;
-                
-                const stockDisponibleReal = p.cantidad + cantOriginalEnRemito;
-
-                if(it.cantidad > stockDisponibleReal) {
-                    alert(`❌ ERROR DE STOCK: El producto "${it.nombre}" no puede tener cantidad ${it.cantidad}. El máximo disponible (incluyendo lo que ya estaba en el remito) es ${stockDisponibleReal}.`);
-                    return; // Detiene todo el proceso
-                }
-            }
-
-            // 1. Revertir stock viejo
-            for(const it of remitoOriginal.items) {
-                const p = productosMaster.find(x => x.id === it.id);
-                if(p) await update(ref(db, `stockPorMarca/${it.id}`), { cantidad: p.cantidad + it.cantidad });
-            }
-            // 2. Aplicar stock nuevo
-            for(const it of items) {
-                const p = productosMaster.find(x => x.id === it.id);
-                if(p) {
-                    // Volvemos a obtener el stock porque se actualizó arriba
-                    const pRef = ref(db, `stockPorMarca/${it.id}`);
-                    const pSnap = await get(pRef);
-                    await update(pRef, { cantidad: pSnap.val().cantidad - it.cantidad });
-                }
-            }
-
             const total = items.reduce((acc, i) => acc + (i.precio * i.cantidad), 0);
-            const cliente = document.getElementById('editCliente').value;
-            const direccion = document.getElementById('editDireccion').value;
-            
-            await update(ref(db, `remitos/${remitoIdFirebase}`), { 
-                cliente, direccion, items, total, fechaEditado: Date.now() 
-            });
-            
-            imprimir(remitoIdFirebase, cliente, direccion, items, total);
-            alert("✅ Remito actualizado y stock sincronizado correctamente.");
+            const datos = {
+                cliente: document.getElementById('editCliente').value,
+                direccion: document.getElementById('editDireccion').value,
+                items,
+                total,
+                fechaEditado: Date.now()
+            };
+
+            await update(ref(db, `remitos/${remitoIdFirebase}`), datos);
+            alert("✅ Guardado con éxito.");
             window.location.href = "remitos.html";
-        } catch(e) { alert("Error al guardar: " + e.message); }
+        } catch(e) {
+            alert("Error: " + e.message);
+            btn.disabled = false;
+            btn.textContent = "GUARDAR CAMBIOS E IMPRIMIR PDF";
+        }
     };
 
-    function imprimir(nro, cli, dir, lista, tot) {
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF();
-        doc.setFontSize(16); doc.setFont("helvetica", "bold");
-        doc.text("B-P Distribuidora", 15, 20);
-        doc.setFontSize(10); doc.setFont("helvetica", "normal");
-        doc.text("Humberto Primo 2193, Burzaco", 15, 26);
-        doc.text("Tel: 1168136926 / 1126127218", 15, 31);
-        doc.text(`REMITO N°: ${String(nro).padStart(6, '0')}`, 140, 20);
-        doc.text(`Fecha: ${new Date().toLocaleDateString()}`, 140, 26);
-        doc.line(15, 38, 195, 38);
-        doc.text(`CLIENTE: ${cli.toUpperCase()}`, 15, 48);
-        doc.text(`DOMICILIO: ${dir.toUpperCase()}`, 15, 54);
-        
-        const body = lista.map(i => [i.codigo, i.nombre, i.cantidad, `$${i.precio}`, `$${i.cantidad * i.precio}`]);
-        doc.autoTable({ startY: 60, head: [['COD', 'PRODUCTO', 'CANT', 'PRECIO', 'SUB']], body, headStyles: { fillColor: [255, 43, 43] } });
-        doc.text(`TOTAL: $${tot.toLocaleString('es-AR')}`, 195, doc.lastAutoTable.finalY + 10, { align: "right" });
-        doc.save(`Remito_${nro}_Actualizado.pdf`);
-    }
-
     document.getElementById('btnLogout').onclick = () => signOut(auth);
-  </script>
+</script>
 </body>
 </html>
