@@ -95,10 +95,18 @@
           <input type="text" id="codigo" placeholder="Código">
           <select id="marca">
             <option value="">Marca...</option>
-            <option value="Duke">Duke</option>
-            <option value="TF3">TF3</option>
             <option value="Bonomini">Bonomini</option>
+            <option value="Bronplas">Bronplas</option>
             <option value="Dealer">Dealer</option>
+            <option value="Duke">Duke</option>
+            <option value="Egoplast">Egoplast</option>
+            <option value="Faplas">Faplas</option>
+            <option value="Fusiogas">Fusiogas</option>
+            <option value="Redeco">Redeco</option>
+            <option value="TF3">TF3</option>
+            <option value="Polipropileno">Polipropileno</option>
+            <option value="PVC">PVC</option>
+            <option value="Polietileno">Polietileno (N)</option>
             <option value="Otros">Otros</option>
           </select>
           <input type="text" id="nombre" placeholder="Nombre">
@@ -114,11 +122,20 @@
         
         <div class="tabs" id="tabMarcas">
             <button class="tab active" onclick="cambiarMarca('Todas', this)">Todas</button>
-            <button class="tab" onclick="cambiarMarca('Duke', this)">Duke</button>
-            <button class="tab" onclick="cambiarMarca('TF3', this)">TF3</button>
             <button class="tab" onclick="cambiarMarca('Bonomini', this)">Bonomini</button>
+            <button class="tab" onclick="cambiarMarca('Bronplas', this)">Bronplas</button>
             <button class="tab" onclick="cambiarMarca('Dealer', this)">Dealer</button>
-        </div>
+            <button class="tab" onclick="cambiarMarca('Duke', this)">Duke</button>
+            <button class="tab" onclick="cambiarMarca('Egoplast', this)">Egoplast</button>
+            <button class="tab" onclick="cambiarMarca('Faplas', this)">Faplas</button>
+            <button class="tab" onclick="cambiarMarca('Fusiogas', this)">Fusiogas</button>
+            <button class="tab" onclick="cambiarMarca('Redeco', this)">Redeco</button>
+            <button class="tab" onclick="cambiarMarca('TF3', this)">TF3</button>
+            <button class="tab" onclick="cambiarMarca('Polipropileno', this)">Polipropileno</button>
+            <button class="tab" onclick="cambiarMarca('PVC', this)">PVC</button>
+            <button class="tab" onclick="cambiarMarca('Polietileno', this)">Polietileno(N)</button>
+          <button class="tab" onclick="cambiarMarca('Otros', this)">Otros</button>
+          </div>          
 
         <div style="overflow-x:auto">
           <table id="tablaStockCompleta">
@@ -212,8 +229,12 @@
       const busc = document.getElementById('busqueda').value.toLowerCase();
       const tbody = document.getElementById('tablaStock');
       const filtrados = productos.filter(p => 
-        (marcaFiltro === 'Todas' || p.marca === marcaFiltro) &&
-        ((p.nombre || "").toLowerCase().includes(busc) || (p.codigo || "").toLowerCase().includes(busc))
+        (marcaFiltro === 'Todas' || 
+	p.marca === marcaFiltro||
+    (marcaFiltro === 'Polipropileno' && p.marca === 'Propileno')
+  )  &&
+        ((p.nombre || "").toLowerCase().includes(busc) || 
+	(p.codigo || "").toLowerCase().includes(busc))
       );
 
       tbody.innerHTML = filtrados.map(p => `
@@ -238,7 +259,7 @@
           <td>
             <div class="row-actions">
                 <button class="btn-action btn-edit-mode btn-toggle-edit" onclick="toggleEdicion('${p.id}')">✏️</button>
-                <button class="btn-action btn-delete-mode btn-delete-row" onclick="borrarProducto('${p.id}')" style="display:none">🗑️</button>
+                <button class="btn-action btn-delete-mode btn-delete-row" onclick="borrarProducto('${p.id}')" style="display:none">❌</button>
             </div>
           </td>
           <td>
