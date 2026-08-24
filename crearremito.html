@@ -239,7 +239,7 @@
         await set(ref(db, 'ultimoRemito'), nroFinal);
 
         await Swal.fire('Guardado', `Remito N° ${nroFinal} generado.`, 'success');
-        imprimir(r);
+        await imprimir(r);
         location.reload();
 
       } catch (e) {
@@ -247,21 +247,32 @@
       }
     };
 
-    function imprimir(r) {
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF();
-      
-      const logoBase64 = "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgNDRgyIRwhMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjL/wAARCAAtAFADASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4X3qDhIWGh4iJipKTlJWWl5iZmqjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSEUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4X3q19kZG50Zm5uY2R8fX53c3R1dnd4X3q5err69v7u7n9upt3mx8vP09fb3+Pn6/9oADAMAMAMAMAMAMAMAHBf8+fXpUeaKKBXHY9z7UhGBkZPPeiigBtFFFADfX2PFSjpRRSZURPrS0UUhifpSj/AD+VFFNAH/1+1FFFIY09//rV//Z";
+ async function imprimir(r) {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
 
-      // Logo e Info de Empresa
-      doc.addImage(logoBase64, 'JPEG', 15, 10, 40, 20); 
+    // ==========================================
+    // LOGO NDB - archivo logo.jpeg
+    // ==========================================
+    const logo = new Image();
+    logo.src = "logo.jpeg";
+
+    await new Promise((resolve, reject) => {
+        logo.onload = resolve;
+        logo.onerror = reject;
+    });
+
+    // Logo
+    doc.addImage(logo, 'JPEG', 15, 8, 40, 30);
+
+
       doc.setFontSize(16); doc.setFont("helvetica", "bold");
-      doc.text("B-P Distribuidora", 60, 18);
+      doc.text("NDB Distribuidora", 60, 18);
       
       doc.setFontSize(10); doc.setFont("helvetica", "normal");
-      doc.text("Humberto Primo 2193, Burzaco", 60, 24);
-      doc.text("Tel: 1168136926 / 1126127218", 60, 29);
-      doc.text("Email: bpsanitarios@gmail.com", 60, 34);
+      doc.text("____________________________", 60, 24);
+      doc.text("Celular: 1126127218", 60, 29);
+      doc.text("Email: ndb.sanitarios@gmail.com", 60, 34);
       
       // Datos Remito
       doc.setFontSize(11);
