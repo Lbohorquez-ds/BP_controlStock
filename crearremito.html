@@ -10,17 +10,34 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
   <style>
     .sugerencias-box {
-      position: absolute; top: 100%; left: 0; right: 0;
-      background: white; color: black; z-index: 1000;
-      border: 1px solid #ccc; border-radius: 0 0 8px 8px;
-      max-height: 180px; overflow-y: auto; box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+      position: absolute; 
+      top: 100%; 
+      left: 0; 
+      right: 0;
+      background: white; 
+      color: black; 
+      z-index: 1000;
+      border: 1px solid #ccc; 
+      border-radius: 0 0 8px 8px;
+      max-height: 180px; 
+      overflow-y: auto; 
+      box-shadow: 0 4px 6px rgba(0,0,0,0.2);
     }
-    .sugerencia-item { padding: 10px; cursor: pointer; border-bottom: 1px solid #eee; text-align: left; }
-    .sugerencia-item:hover { background: #f0f0f0; }
+    .sugerencia-item { 
+      padding: 10px; 
+      cursor: pointer; 
+      border-bottom: 1px solid #eee; 
+      text-align: left; 
+    }
+    .sugerencia-item:hover { 
+      background: #ff2b2b; 
+      color: white; 
+    }
+    input { background: white !important; color: black !important; }
+    label { color: #bbb; font-weight: bold; font-size: 12px; margin-bottom: 5px; display: block; }
   </style>
 </head>
 <body>
-
   <nav class="nav-custom">
     <div class="nav-links">
       <a href="index.html">INICIO</a>
@@ -30,269 +47,213 @@
     </div>
   </nav>
 
+    <img id="logoRemito" src="logo.jpeg" style="display:none;">
+    
   <div class="container">
-    <h1>Crear Nuevo Remito</h1>
-    <p class="subtitulo">B-P SANITARIOS - Distribuidora</p>
+    <h1>B-P Sanitarios</h1>
+    <div class="subtitulo">Generación de Remito Oficial</div>
 
     <div class="card">
-      <h3 style="color:white; border-bottom: 2px solid #ff2b2b; display:inline-block; margin-bottom:15px;">DATOS DEL CLIENTE</h3>
-      <div class="grid" style="position:relative;">
-        <input type="text" id="inputCliente" placeholder="Buscar cliente por nombre..." autocomplete="off">
-        <div id="sugerenciasCliente" class="sugerencias-box" style="display:none;"></div>
-        <input type="text" id="inputDireccion" placeholder="Dirección (se completa solo)" readonly>
+      <h3 style="color:white; border-bottom: 2px solid #ff2b2b; display:inline-block; margin-bottom:15px;">Datos del Cliente</h3>
+      <div class="grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+        <div style="position: relative;">
+          <label>Nombre o Razón Social</label>
+          <input type="text" id="clienteNombre" oninput="buscar()" placeholder="Escribí para buscar..." autocomplete="off">
+          <div id="boxSug" class="sugerencias-box" style="display:none"></div>
+        </div>
+        <div>
+          <label>Dirección</label>
+          <input type="text" id="clienteDir" placeholder="Dirección de entrega">
+        </div>
       </div>
     </div>
 
-    <div class="card">
-      <h3 style="color:white; border-bottom: 2px solid #ff2b2b; display:inline-block; margin-bottom:15px;">AGREGAR PRODUCTOS</h3>
-      <div class="grid" style="position:relative;">
-        <input type="text" id="inputProducto" placeholder="Buscar producto por código o nombre..." autocomplete="off">
-        <div id="sugerenciasProducto" class="sugerencias-box" style="display:none;"></div>
-        <input type="number" id="inputCantidad" placeholder="Cant." style="width:100px;">
-        <button class="btn-primary" onclick="agregarAlRemito()">Añadir</button>
-      </div>
-    </div>
-
-    <div class="card" style="background: white;">
-      <table id="tablaRemito">
-        <thead style="background: #222; color: white;">
-          <tr>
-            <th>CÓDIGO</th>
-            <th>PRODUCTO</th>
-            <th>CANT.</th>
-            <th>PRECIO UNIT.</th>
-            <th>SUBTOTAL</th>
-            <th>ACCIONES</th>
-          </tr>
+    <div class="card" style="padding:0; overflow:hidden; background:white;">
+      <table style="width:100%; border-collapse:collapse; color:black;">
+        <thead style="background:#ff2b2b; color:white;">
+          <tr><th style="padding:12px;">Cod.</th><th>Producto</th><th>Cant.</th><th>Unit.</th><th>Subtotal</th></tr>
         </thead>
-        <tbody id="cuerpoRemito" style="color: #333;">
-          </tbody>
+        <tbody id="tbodyR"></tbody>
       </table>
-      
-      <div style="text-align: right; margin-top: 20px; font-size: 24px; color: #111;">
-        <strong>TOTAL: $ <span id="totalRemito">0</span></strong>
-      </div>
+      <div id="totalFinal" style="background:#111; color:white; padding:20px; text-align:right; font-size:24px; font-weight:bold;">Total: $0</div>
     </div>
 
-    <div style="margin-top:20px; display:flex; gap:15px; justify-content: flex-end;">
-      <button class="btn-primary" style="background:#555;" onclick="window.location.href='index.html'">Cancelar</button>
-      <button class="btn-primary" onclick="confirmarRemito()">Finalizar e Imprimir</button>
+    <div style="display:flex; gap:15px; justify-content:flex-end; margin-top:20px;">
+      <button class="btn-secondary" onclick="window.location.href='productos.html'">Volver al Stock</button>
+      <button class="btn-primary" onclick="procesarRemito()" style="background:#28a745; padding:15px 30px;">CONFIRMAR E IMPRIMIR</button>
     </div>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js";
-    import { getDatabase, ref, get, set, push, onValue, query, orderByChild, limitToLast } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-database.js";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getDatabase, ref, onValue, push, set, get, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-    const firebaseConfig = {
-      // Tu configuración de Firebase aquí
-      databaseURL: "https://bpsanitarios-default-rtdb.firebaseio.com" 
+    const config = {
+      apiKey: "AIzaSyCtn8b4kpU616tgH56Gw-NDH0o5zLDn48Q",
+      authDomain: "bpsanitariossrl.firebaseapp.com",
+      databaseURL: "https://bpsanitariossrl-default-rtdb.firebaseio.com",
+      projectId: "bpsanitariossrl"
     };
-
-    const app = initializeApp(firebaseConfig);
+    const app = initializeApp(config);
     const db = getDatabase(app);
+    const auth = getAuth(app);
 
-    let clientes = [];
-    let productos = [];
-    const inputCli = document.getElementById('inputCliente');
-    const inputDir = document.getElementById('inputDireccion');
-    const sugCli = document.getElementById('sugerenciasCliente');
-    const inputProd = document.getElementById('inputProducto');
-    const sugProd = document.getElementById('sugerenciasProducto');
-    const inputCant = document.getElementById('inputCantidad');
-    const cuerpoRemito = document.getElementById('cuerpoRemito');
-    const divTotal = document.getElementById('totalRemito');
+    let carrito = JSON.parse(localStorage.getItem('bp_carrito')) || [];
+    let clientesDB = [];
 
-    let itemSeleccionado = null;
-
-    // CARGAR DATOS
-    onValue(ref(db, 'clientes'), snap => {
-      const data = snap.val();
-      clientes = data ? Object.entries(data).map(([id,v]) => ({id,...v})) : [];
-    });
-
-    onValue(ref(db, 'stockPorMarca'), snap => {
-      const data = snap.val();
-      productos = data ? Object.entries(data).map(([id,v]) => ({id,...v})) : [];
-    });
-
-    // BUSCADOR CLIENTES
-    inputCli.oninput = () => {
-      const txt = inputCli.value.toLowerCase();
-      sugCli.innerHTML = '';
-      if(!txt) { sugCli.style.display='none'; return; }
-      const filtrados = clientes.filter(c => c.nombre.toLowerCase().includes(txt));
-      filtrados.forEach(c => {
-        const d = document.createElement('div');
-        d.className = 'sugerencia-item';
-        d.textContent = c.nombre;
-        d.onclick = () => {
-          inputCli.value = c.nombre;
-          inputDir.value = c.direccion;
-          localStorage.setItem('cliente', c.nombre);
-          localStorage.setItem('direccion', c.direccion);
-          sugCli.style.display = 'none';
-        };
-        sugCli.appendChild(d);
-      });
-      sugCli.style.display = filtrados.length ? 'block' : 'none';
-    };
-
-    // BUSCADOR PRODUCTOS
-    inputProd.oninput = () => {
-      const txt = inputProd.value.toLowerCase();
-      sugProd.innerHTML = '';
-      if(!txt) { sugProd.style.display='none'; return; }
-      const filtrados = productos.filter(p => p.codigo.toLowerCase().includes(txt) || p.nombre.toLowerCase().includes(txt));
-      filtrados.forEach(p => {
-        const d = document.createElement('div');
-        d.className = 'sugerencia-item';
-        d.textContent = `(${p.codigo}) ${p.nombre} - $${p.precio}`;
-        d.onclick = () => {
-          inputProd.value = p.nombre;
-          itemSeleccionado = p;
-          sugProd.style.display = 'none';
-          inputCant.focus();
-        };
-        sugProd.appendChild(d);
-      });
-      sugProd.style.display = filtrados.length ? 'block' : 'none';
-    };
-
-    window.agregarAlRemito = () => {
-      const cant = parseInt(inputCant.value);
-      if(!itemSeleccionado || isNaN(cant) || cant <= 0) return;
-      
-      const subtotal = cant * itemSeleccionado.precio;
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>${itemSeleccionado.codigo}</td>
-        <td>${itemSeleccionado.nombre}</td>
-        <td>${cant}</td>
-        <td>${itemSeleccionado.precio}</td>
-        <td>${subtotal}</td>
-        <td><button class="btn-delete-mode" onclick="this.parentElement.parentElement.remove(); actualizarTotal();">X</button></td>
-      `;
-      cuerpoRemito.appendChild(tr);
-      actualizarTotal();
-      
-      inputProd.value = '';
-      inputCant.value = '';
-      itemSeleccionado = null;
-    };
-
-    window.actualizarTotal = () => {
-      let t = 0;
-      cuerpoRemito.querySelectorAll('tr').forEach(row => {
-        t += parseFloat(row.cells[4].textContent);
-      });
-      divTotal.textContent = t.toLocaleString('es-AR');
-    };
-
-    // BOTÓN FINALIZAR
-    window.confirmarRemito = async () => {
-      try {
-        // 1. OBTENER NRO REMITO (Seguro)
-        const nroRef = ref(db, 'ultimoRemito');
-        const nroS = await get(nroRef);
-        let nroActual = nroS.val() || 0;
-
-        // Respaldo: chequear el nro más alto en la lista real
-        const remitosRef = ref(db, 'remitos');
-        const qUltimo = query(remitosRef, orderByChild('nroRemito'), limitToLast(1));
-        const snapUltimo = await get(qUltimo);
-        let nroEnLista = 0;
-        if(snapUltimo.exists()){
-            const data = Object.values(snapUltimo.val())[0];
-            nroEnLista = data.nroRemito || 0;
-        }
-
-        const nroFinal = Math.max(nroActual, nroEnLista) + 1;
-
-        // 2. CREAR OBJETO
-        const r = {
-          nroRemito: nroFinal,
-          fecha: new Date().toISOString(),
-          cliente: inputCli.value,
-          direccion: inputDir.value,
-          items: [],
-          total: parseFloat(divTotal.textContent.replace(/\./g, '').replace(',', '.'))
-        };
-
-        if(!r.cliente || cuerpoRemito.rows.length === 0) {
-          Swal.fire('Error', 'Completa cliente y productos', 'error');
-          return;
-        }
-
-        cuerpoRemito.querySelectorAll('tr').forEach(row => {
-          r.items.push({
-            codigo: row.cells[0].textContent,
-            nombre: row.cells[1].textContent,
-            cantidad: parseInt(row.cells[2].textContent),
-            precio: parseFloat(row.cells[3].textContent)
-          });
+    onAuthStateChanged(auth, u => {
+      if(u) {
+        onValue(ref(db, 'clientes'), s => {
+          const d = s.val();
+          clientesDB = d ? Object.values(d) : [];
         });
+        render();
+      } else window.location.href="index.html";
+    });
 
-        // 3. GUARDAR
-        await push(ref(db, 'remitos'), r);
-        await set(ref(db, 'ultimoRemito'), nroFinal);
-
-        await Swal.fire('Guardado', `Remito N° ${nroFinal} generado.`, 'success');
-        imprimir(r);
-        location.reload();
-
-      } catch (e) {
-        Swal.fire('Error', e.message, 'error');
-      }
+    window.buscar = () => {
+      const val = document.getElementById('clienteNombre').value.toLowerCase();
+      const box = document.getElementById('boxSug');
+      if(val.length < 2) { box.style.display='none'; return; }
+      const fil = clientesDB.filter(c => c.nombre.toLowerCase().includes(val));
+      box.style.display = fil.length ? 'block' : 'none';
+      box.innerHTML = fil.map(c => `<div class="sugerencia-item" onclick="sel('${c.nombre}','${c.direccion}')"><strong>${c.nombre}</strong><br><small>${c.direccion}</small></div>`).join('');
     };
 
-    function imprimir(r) {
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF();
-      
-      const logoBase64 = "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgNDRgyIRwhMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjL/wAARCAAtAFADASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4X3qDhIWGh4iJipKTlJWWl5iZmqjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSEUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4X3q19kZG50Zm5uY2R8fX53c3R1dnd4X3q5err69v7u7n9upt3mx8vP09fb3+Pn6/9oADAMAMAMAMAMAMAMAHBf8+fXpUeaKKBXHY9z7UhGBkZPPeiigBtFFFADfX2PFSjpRRSZURPrS0UUhifpSj/AD+VFFNAH/1+1FFFIY09//rV//Z";
+    window.sel = (n, d) => {
+      document.getElementById('clienteNombre').value = n;
+      document.getElementById('clienteDir').value = d;
+      document.getElementById('boxSug').style.display='none';
+    };
 
-      // Logo e Info de Empresa
-      doc.addImage(logoBase64, 'JPEG', 15, 10, 40, 20); 
-      doc.setFontSize(16); doc.setFont("helvetica", "bold");
-      doc.text("B-P Distribuidora", 60, 18);
-      
-      doc.setFontSize(10); doc.setFont("helvetica", "normal");
-      doc.text("Humberto Primo 2193, Burzaco", 60, 24);
-      doc.text("Tel: 1168136926 / 1126127218", 60, 29);
-      doc.text("Email: bpsanitarios@gmail.com", 60, 34);
-      
-      // Datos Remito
-      doc.setFontSize(11);
-      doc.text(`REMITO N°: ${String(r.nroRemito).padStart(6, '0')}`, 140, 20);
-      doc.text(`Fecha: ${new Date().toLocaleDateString()}`, 140, 26);
-      doc.line(15, 40, 195, 40);
-
-      doc.text(`CLIENTE: ${r.cliente.toUpperCase()}`, 15, 48);
-      doc.text(`DOMICILIO: ${r.direccion.toUpperCase()}`, 15, 54);
-
-      // Tabla
-      doc.autoTable({
-        startY: 62,
-        head: [['COD.', 'PRODUCTO', 'CANT.', 'UNIT.', 'TOTAL']],
-        body: r.items.map(i => [
-          i.codigo, 
-          i.nombre, 
-          i.cantidad, 
-          `$${Number(i.precio).toLocaleString('es-AR', {minimumFractionDigits:2})}`, 
-          `$${(i.cantidad * i.precio).toLocaleString('es-AR', {minimumFractionDigits:2})}`
-        ]),
-        theme: 'striped',
-        headStyles: { fillColor: [255, 43, 43] }
-      });
-
-      const finalY = doc.lastAutoTable.finalY + 15;
-      doc.setFontSize(14); doc.setFont("helvetica", "bold");
-      doc.text(`TOTAL: $${r.total.toLocaleString('es-AR', {minimumFractionDigits:2})}`, 195, finalY, { align: "right" });
-      
-      doc.save(`Remito_${r.nroRemito}_${r.cliente}.pdf`);
+    function render() {
+      let t = 0;
+      document.getElementById('tbodyR').innerHTML = carrito.map(i => {
+        const sub = i.cantidad * i.precio; t += sub;
+        return `<tr style="border-bottom:1px solid #eee;"><td style="padding:10px; text-align:center;">${i.codigo}</td><td>${i.nombre}</td><td style="text-align:center;">${i.cantidad}</td><td style="text-align:center;">$${i.precio}</td><td style="text-align:center; font-weight:bold;">$${sub}</td></tr>`;
+      }).join('');
+      document.getElementById('totalFinal').innerText = `Total: $${t.toLocaleString('es-AR')}`;
     }
+
+    window.procesarRemito = async () => {
+      const n = document.getElementById('clienteNombre').value.trim();
+      const d = document.getElementById('clienteDir').value.trim();
+      if(!n || !d || !carrito.length) return alert("Faltan datos o el carrito está vacío");
+
+      const existe = clientesDB.some(c => c.nombre.toLowerCase() === n.toLowerCase());
+      if(!existe) await push(ref(db, 'clientes'), { nombre: n, direccion: d });
+
+      const nroS = await get(ref(db, 'ultimoRemito'));
+      const nro = (nroS.val() || 0) + 1;
+      const total = carrito.reduce((s, i) => s + (i.cantidad * i.precio), 0);
+      const remito = { nroRemito: nro, cliente: n, direccion: d, items: carrito, total, fecha: new Date().toISOString() };
+      
+      await push(ref(db, 'remitos'), remito);
+      await set(ref(db, 'ultimoRemito'), nro);
+
+      for(const item of carrito) {
+        const pRef = ref(db, `stockPorMarca/${item.id}`);
+        const pS = await get(pRef);
+        if(pS.exists()) await update(pRef, { cantidad: pS.val().cantidad - item.cantidad });
+      }
+
+      imprimir(remito);
+      localStorage.removeItem('bp_carrito');
+      window.location.href="remitos.html";
+    };
+
+  function imprimir(r) {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    
+    // Obtenemos el elemento de la imagen precargada
+    const imgLogo = document.getElementById('logoRemito');
+
+    // 1. ENCABEZADO
+    try {
+    if (imgLogo && imgLogo.complete) {
+        doc.addImage(imgLogo, 'JPEG', 10, 8, 38, 28);
+    }
+} catch (e) { 
+    console.error("Error al insertar logo:", e); 
+}
+
+// Nombre de la empresa
+doc.setFontSize(17);
+doc.setFont("helvetica", "bold");
+doc.text("Distribuidora Mayorista", 55, 14);
+
+doc.setFontSize(9);
+doc.setFont("helvetica", "normal");
+doc.text("de Nestor Daniel Banegas", 55, 19);
+
+// Línea debajo del nombre
+doc.setDrawColor(120);
+doc.setLineWidth(0.3);
+doc.line(55, 22, 125, 22);
+
+// Datos de contacto
+doc.setFontSize(9);
+doc.setFont("helvetica", "normal");
+doc.text("Celular: 11 2612-7218", 55, 27);
+doc.text("Email: ndb.sanitarios@gmail.com", 55, 32);
+    
+    const nro = r.nroRemito || "000000";
+const fecha = new Date(r.fecha || Date.now()).toLocaleDateString('es-AR');
+
+doc.setFont("helvetica", "bold");
+doc.setFontSize(12);
+doc.text("REMITO", 195, 13, { align: "right" });
+
+doc.setFontSize(10);
+doc.text(`N° ${String(nro).padStart(6, '0')}`, 195, 20, { align: "right" });
+
+doc.setFont("helvetica", "normal");
+doc.setFontSize(9);
+doc.text(`Fecha: ${fecha}`, 195, 27, { align: "right" });
+
+// Línea separadora
+doc.setDrawColor(0);
+doc.setLineWidth(0.4);
+doc.line(10, 39, 200, 39);
+
+    // 2. DATOS DEL CLIENTE
+    doc.setFontSize(10); 
+    doc.setFont("helvetica", "bold");
+    doc.text("CLIENTE:", 10, 48);
+    doc.setFont("helvetica", "normal");
+    doc.text(String(r.cliente || "Consumidor Final").toUpperCase(), 35, 48);
+
+    doc.setFont("helvetica", "bold");
+    doc.text("DOMICILIO:", 10, 54);
+    doc.setFont("helvetica", "normal");
+    doc.text(String(r.direccion || "---").toUpperCase(), 35, 54);
+
+    // 3. TABLA DE PRODUCTOS
+    doc.autoTable({ 
+      startY: 61, 
+      head: [['Cod.', 'Producto', 'Cant.', 'Precio Unit.', 'Subtotal']], 
+      body: r.items.map(i => [
+        i.codigo, 
+        i.nombre, 
+        i.cantidad, 
+        `$${Number(i.precio).toLocaleString('es-AR')}`, 
+        `$${(i.cantidad * i.precio).toLocaleString('es-AR')}`
+      ]), 
+      headStyles: { fillColor: [255, 43, 43], textColor: [255, 255, 255], fontStyle: 'bold' },
+      theme: 'grid',
+      styles: { fontSize: 9 }
+    });
+
+    // 4. TOTAL
+    const finalY = doc.lastAutoTable.finalY + 10;
+    doc.setFontSize(14); 
+    doc.setFont("helvetica", "bold");
+    doc.text(`TOTAL: $${Number(r.total).toLocaleString('es-AR')}`, 195, finalY, { align: "right" });
+
+    doc.save(`Remito_${nro}.pdf`);
+  }
   </script>
 </body>
 </html>
